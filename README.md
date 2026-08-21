@@ -1,9 +1,20 @@
-# Valent & Co. — Luxury Fragrance Storefront
+# JARRO — Women's Clothing Storefront
 
-A React + TypeScript storefront for Valent & Co., a Bangladesh-focused luxury
-fragrance brand. Product catalogue and orders are backed by AWS DynamoDB;
-admin login is backed by AWS Cognito. Cart and wishlist are kept client-side
-(per-visitor, in `localStorage`).
+A React + TypeScript storefront for JARRO ("Real Fits, Real You"), a
+Bangladesh-based women's clothing brand (kurtis, 3-piece sets, co-ords,
+ponchos, and bangles — see facebook.com/Jarrobd). This is a rebrand/clone of
+the Valent & Co. codebase, retargeted at JARRO's product line. Product
+catalogue and orders are backed by AWS DynamoDB; admin login is backed by AWS
+Cognito. Cart and wishlist are kept client-side (per-visitor, in
+`localStorage`).
+
+> **Front-end rebrand status:** branding, colors, categories, and mock
+> product data have been updated for JARRO. The AWS wiring below (table
+> names, Cognito pool, Amplify app) still points at the **original Valent &
+> Co. infrastructure** and has not been reconfigured for JARRO — see
+> [Environment variables](#environment-variables). Until you provision new
+> AWS resources for JARRO and set `.env` accordingly, the app runs on the
+> bundled demo data only (read-only; no real checkout/admin backend).
 
 ## Stack
 
@@ -55,6 +66,12 @@ See `.env.example` for a template.
 ## Infrastructure
 
 Provisioned in AWS (region `us-east-1`):
+
+The resources below are the **original Valent & Co. infrastructure** this
+project was cloned from — they are not JARRO's own AWS resources. Provision
+equivalent resources for JARRO (e.g. `Jarro-Products`, `Jarro-Orders`, a new
+Cognito pool, a new Amplify app) and point `.env` at them before relying on
+the backend.
 
 - **DynamoDB** — `ValentCo-Products`, `ValentCo-Orders` (with `orderNumber-index`
   and `customerMobile-index` GSIs on Orders)

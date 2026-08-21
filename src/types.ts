@@ -1,60 +1,33 @@
-export type ProductCategory = 
-  | 'perfumes' 
-  | 'watches' 
-  | 'sunglasses' 
-  | 'wallets' 
-  | 'bags' 
-  | 'caps' 
+export type ProductCategory =
+  | 'kurtis'
+  | 'three-piece'
+  | 'co-ords'
+  | 'ponchos'
   | 'accessories';
 
-export type FragranceFamily = 'Woody' | 'Fresh & Citrus' | 'Amber & Oriental' | 'Floral' | 'Aromatic & Fougere' | 'Leather & Smoky';
-export type GenderTarget = 'Unisex' | 'Men' | 'Women';
+export type FitType = 'Regular Fit' | 'Relaxed Fit' | 'Oversized' | 'A-Line' | 'Straight Cut';
 
-export interface FragranceAttributes {
-  concentration: 'Eau de Parfum (EDP)' | 'Parfum / Extrait' | 'Eau de Toilette (EDT)' | 'Cologne';
-  fragranceFamily: FragranceFamily;
-  gender: GenderTarget;
-  topNotes: string[];
-  heartNotes: string[];
-  baseNotes: string[];
-  mood: string;
-  longevity: string;
-  sillage: string;
-  season: string;
+export interface ClothingAttributes {
+  fabric: string; // e.g. "Premium Muslin Cotton", "Georgette", "Viscose"
+  fit: FitType;
+  pattern: string; // e.g. "Floral Print", "Tie-Dye", "Solid"
+  sleeveType: string; // e.g. "Full Sleeve", "Three-Quarter Sleeve", "Sleeveless"
+  neckline?: string; // e.g. "Round Neck", "V-Neck", "Boat Neck"
+  occasion: string; // e.g. "Casual Daywear", "Festive", "Office Wear"
+  washCare: string; // e.g. "Hand wash cold, line dry in shade"
+  modelSize?: string; // e.g. "Model wears size M, height 5'5\""
+  piecesIncluded?: string; // e.g. "Tunic + Pants + Dupatta" for three-piece sets
 }
 
-export interface WatchAttributes {
-  movement: 'Automatic Self-Winding' | 'Swiss Quartz' | 'Chronograph Automatic' | 'Manual Wind Mechanical';
-  caseSize: string; // e.g. "40mm"
-  caseMaterial: string; // e.g. "316L Stainless Steel"
-  dialColor: string;
-  strapMaterial: string; // e.g. "Italian Full-Grain Leather" or "Stainless Steel Jubilee"
-  waterResistance: string; // e.g. "50m / 5 ATM" or "200m / 20 ATM"
-  glass: string; // e.g. "Domed Sapphire Crystal with AR Coating"
-  warranty: string;
-}
-
-export interface SunglassesAttributes {
-  frameShape: 'Aviator' | 'Square' | 'Wayfarer' | 'Round' | 'Hexagonal';
-  frameMaterial: 'Handcrafted Italian Acetate' | 'Japanese Beta-Titanium' | 'Stainless Steel';
-  lensType: 'Polarized UV400' | 'Gradient Tint UV400' | 'Mineral Glass';
-  lensColor: string;
-  gender: GenderTarget;
-  fit: 'Standard' | 'Wide' | 'Slim';
-}
-
-export interface LeatherAttributes {
-  material: 'Full-Grain Italian Calfskin' | 'Nappa Leather' | 'Saffiano Textured Leather' | 'Waxed Canvas & Bridle Leather';
-  dimensions: string;
-  cardSlots?: number;
-  compartments?: string;
-  rfidProtected?: boolean;
-  hardware?: string;
+export interface AccessoryAttributes {
+  material: string; // e.g. "Lac Bangles with Kundan Stonework"
+  setPieces?: number; // e.g. 12 (bangles in a set)
+  adjustable?: boolean;
 }
 
 export interface ProductVariant {
   id: string;
-  name: string; // e.g. "100ml" or "Cognac Leather" or "Midnight Black"
+  name: string; // e.g. "Size M", "Size L", "Free Size", "2.4 inch"
   sku: string;
   price: number;
   oldPrice?: number;
@@ -67,7 +40,7 @@ export interface Product {
   sku: string;
   name: string;
   slug: string;
-  brand: string;
+  brand: string; // Collection name within JARRO (e.g. "JARRO Signature Prints")
   category: ProductCategory;
   subtitle: string;
   description: string;
@@ -83,13 +56,11 @@ export interface Product {
   isLimited?: boolean;
   rating: number;
   reviewCount: number;
-  
+
   // Category specific specs
-  fragranceSpecs?: FragranceAttributes;
-  watchSpecs?: WatchAttributes;
-  sunglassSpecs?: SunglassesAttributes;
-  leatherSpecs?: LeatherAttributes;
-  
+  clothingSpecs?: ClothingAttributes;
+  accessorySpecs?: AccessoryAttributes;
+
   tags: string[];
   careInstructions?: string;
   origin?: string;
@@ -104,13 +75,13 @@ export interface CartItem {
   unitPrice: number;
 }
 
-export type OrderStatus = 
-  | 'New' 
-  | 'Contacted' 
-  | 'Confirmed' 
-  | 'Processing' 
-  | 'Shipped' 
-  | 'Delivered' 
+export type OrderStatus =
+  | 'New'
+  | 'Contacted'
+  | 'Confirmed'
+  | 'Processing'
+  | 'Shipped'
+  | 'Delivered'
   | 'Cancelled';
 
 export interface OrderItem {
@@ -135,7 +106,7 @@ export interface CustomerInfo {
 
 export interface Order {
   id: string;
-  orderNumber: string; // e.g. "VAL-84920"
+  orderNumber: string; // e.g. "JRO-84920"
   createdAt: string;
   customer: CustomerInfo;
   items: OrderItem[];
@@ -152,8 +123,7 @@ export interface Order {
 export interface FilterState {
   category?: ProductCategory | 'all';
   searchQuery: string;
-  fragranceFamily?: string;
-  gender?: string;
+  size?: string;
   minPrice: number;
   maxPrice: number;
   inStockOnly: boolean;

@@ -46,7 +46,7 @@ const AdminView = lazy(() =>
 
 const ViewLoadingFallback: React.FC = () => (
   <div className="min-h-[60vh] flex items-center justify-center">
-    <div className="w-8 h-8 border-2 border-[#E8E5DE] border-t-[#1C1B19] rounded-full animate-spin" />
+    <div className="w-8 h-8 border-2 border-[#F0D9DC] border-t-[#241A1E] rounded-full animate-spin" />
   </div>
 );
 
@@ -62,7 +62,7 @@ const MainLayout: React.FC = () => {
   }, [activeView]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF9F6] text-[#1C1B19] selection:bg-[#9A6A3A] selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#FDF4F1] text-[#241A1E] selection:bg-[#C2607D] selection:text-white">
       
       {/* Header (Hidden when inside Admin portal for dedicated back-office screen) */}
       {activeView !== 'admin' && <Header />}
@@ -94,20 +94,21 @@ const MainLayout: React.FC = () => {
       {/* Floating WhatsApp Concierge Button */}
       {activeView !== 'admin' && (
         <aside
-          aria-label="Direct WhatsApp Concierge"
+          aria-label="Direct WhatsApp Chat"
           className="fixed bottom-6 right-6 z-40"
         >
           <a
             id="whatsapp-concierge-float"
-            href="https://wa.me/8801648339833?text=Hello%20Valent%20%26%20Co.%2C%20I%20would%20like%20assistance%20with%20a%20luxury%20order."
+            // TODO: replace with JARRO's real WhatsApp number (currently a placeholder).
+            href="https://wa.me/8801000000000?text=Hello%20JARRO%2C%20I%20would%20like%20assistance%20with%20an%20order."
             target="_blank"
             rel="noopener noreferrer"
             className="group flex items-center gap-2.5 bg-[#25D366] hover:bg-[#1fb857] text-white p-3.5 sm:px-4 sm:py-3 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-            title="Chat with Dhaka Concierge"
+            title="Chat with JARRO on WhatsApp"
           >
             <MessageCircle className="w-5 h-5 fill-current" />
             <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline whitespace-nowrap">
-              WhatsApp Concierge
+              WhatsApp Us
             </span>
           </a>
         </aside>

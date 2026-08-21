@@ -1,5 +1,7 @@
 /**
- * AWS DynamoDB client wiring for the Valent & Co. storefront.
+ * AWS DynamoDB client wiring for the JARRO storefront (cloned from Valent &
+ * Co.; still points at the original Valent & Co. AWS resources until
+ * JARRO's own infrastructure is provisioned — see README.md).
  *
  * Credentials come from a Cognito Identity Pool:
  *  - No idToken -> unauthenticated ("guest") role: read products, create + look up own orders.

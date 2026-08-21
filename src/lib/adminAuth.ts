@@ -1,5 +1,6 @@
 /**
- * Admin sign-in against the Cognito User Pool (ValentCo-AdminPool).
+ * Admin sign-in against the Cognito User Pool (ValentCo-AdminPool — inherited
+ * from the Valent & Co. clone; not yet a JARRO-specific pool, see README.md).
  * On success, the returned ID token is used to assume the "authenticated"
  * (admin) role in the Cognito Identity Pool, which grants write access to
  * DynamoDB (see aws.ts + IAM role ValentCo-AdminRole).
@@ -12,7 +13,7 @@
 const REGION = import.meta.env.VITE_AWS_REGION as string;
 const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID as string;
 
-const STORAGE_KEY = 'valent_admin_session_v1';
+const STORAGE_KEY = 'jarro_admin_session_v1';
 
 export interface AdminSession {
   idToken: string;

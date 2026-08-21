@@ -16,11 +16,11 @@ export const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children })
   if (adminEmail) {
     return (
       <div>
-        <div className="flex items-center justify-between gap-3 bg-[#1C1B19] text-[#D9D5CC] text-[11px] px-4 py-2">
+        <div className="flex items-center justify-between gap-3 bg-[#241A1E] text-[#EFC9CE] text-[11px] px-4 py-2">
           <span>Signed in as <strong className="text-white">{adminEmail}</strong></span>
           <button
             onClick={() => { adminSignOutAction(); navigateTo('home'); }}
-            className="flex items-center gap-1.5 uppercase tracking-wider font-bold text-white hover:text-[#9A6A3A] transition cursor-pointer"
+            className="flex items-center gap-1.5 uppercase tracking-wider font-bold text-white hover:text-[#C2607D] transition cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             Sign out
@@ -45,17 +45,17 @@ export const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#FDF4F1] px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white border border-[#E8E5DE] rounded-2xl shadow-sm p-8 space-y-5"
+        className="w-full max-w-sm bg-white border border-[#F0D9DC] rounded-2xl shadow-sm p-8 space-y-5"
       >
         <div className="text-center space-y-1.5">
-          <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-[#1C1B19] text-[#9A6A3A] mb-1">
+          <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-[#241A1E] text-[#C2607D] mb-1">
             <Lock className="w-5 h-5" />
           </div>
-          <h1 className="font-serif text-2xl font-bold text-[#1C1B19]">Admin Sign-In</h1>
-          <p className="text-xs text-[#6B6864]">Valent & Co. back office — authorized staff only.</p>
+          <h1 className="font-serif text-2xl font-bold text-[#241A1E]">Admin Sign-In</h1>
+          <p className="text-xs text-[#8C6A72]">JARRO back office — authorized staff only.</p>
         </div>
 
         {error && (
@@ -66,7 +66,7 @@ export const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children })
 
         <div className="space-y-3">
           <div>
-            <label className="text-[10px] uppercase tracking-wider font-bold text-[#6B6864] block mb-1">
+            <label className="text-[10px] uppercase tracking-wider font-bold text-[#8C6A72] block mb-1">
               Email
             </label>
             <input
@@ -74,12 +74,12 @@ export const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children })
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full text-sm p-3 rounded-lg border border-[#D9D5CC] bg-white focus:outline-none focus:border-[#1C1B19] text-[#1C1B19]"
+              className="w-full text-sm p-3 rounded-lg border border-[#EFC9CE] bg-white focus:outline-none focus:border-[#241A1E] text-[#241A1E]"
               placeholder="you@example.com"
             />
           </div>
           <div>
-            <label className="text-[10px] uppercase tracking-wider font-bold text-[#6B6864] block mb-1">
+            <label className="text-[10px] uppercase tracking-wider font-bold text-[#8C6A72] block mb-1">
               Password
             </label>
             <input
@@ -87,7 +87,7 @@ export const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children })
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full text-sm p-3 rounded-lg border border-[#D9D5CC] bg-white focus:outline-none focus:border-[#1C1B19] text-[#1C1B19]"
+              className="w-full text-sm p-3 rounded-lg border border-[#EFC9CE] bg-white focus:outline-none focus:border-[#241A1E] text-[#241A1E]"
               placeholder="••••••••"
             />
           </div>
@@ -96,7 +96,7 @@ export const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children })
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3 bg-[#1C1B19] hover:bg-[#2A2927] disabled:opacity-60 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition cursor-pointer"
+          className="w-full px-6 py-3 bg-[#241A1E] hover:bg-[#3D2830] disabled:opacity-60 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition cursor-pointer"
         >
           {loading ? 'Signing in…' : 'Sign In'}
         </button>
@@ -104,7 +104,7 @@ export const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children })
         <button
           type="button"
           onClick={() => navigateTo('home')}
-          className="w-full text-center text-[11px] text-[#8C8880] hover:text-[#1C1B19] transition cursor-pointer"
+          className="w-full text-center text-[11px] text-[#A8828A] hover:text-[#241A1E] transition cursor-pointer"
         >
           ← Back to storefront
         </button>

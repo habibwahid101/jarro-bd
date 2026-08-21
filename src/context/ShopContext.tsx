@@ -106,17 +106,16 @@ interface ShopContextType {
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  CART: 'valent_cart_v1',
-  WISHLIST: 'valent_wishlist_v1',
+  CART: 'jarro_cart_v1',
+  WISHLIST: 'jarro_wishlist_v1',
 };
 
 const DEFAULT_FILTERS: FilterState = {
   category: 'all',
   searchQuery: '',
-  fragranceFamily: undefined,
-  gender: undefined,
+  size: undefined,
   minPrice: 0,
-  maxPrice: 35000,
+  maxPrice: 5000,
   inStockOnly: false,
   brand: undefined,
   sortBy: 'featured'
@@ -384,7 +383,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createOrder = async (customerInfo: CustomerInfo, deliveryFee: number): Promise<Order> => {
     const randomSuffix = Math.floor(10000 + Math.random() * 90000);
-    const orderNumber = `VAL-${randomSuffix}`;
+    const orderNumber = `JRO-${randomSuffix}`;
 
     const orderItems = cart.map(item => ({
       productId: item.productId,
@@ -499,7 +498,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Looks up an order by exact order number (e.g. "VAL-84920") or exact
+  // Looks up an order by exact order number (e.g. "JRO-84920") or exact
   // mobile number, via the DynamoDB GSIs — works for guests, no sign-in
   // required. Falls back to the locally-known orders if AWS isn't configured.
   const findOrder = async (query: string): Promise<Order | undefined> => {

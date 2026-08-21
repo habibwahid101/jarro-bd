@@ -1,6 +1,6 @@
 {
-  "name": "Valent & Co. Luxury Lifestyle",
-  "description": "A premium lifestyle e-commerce boutique featuring perfumes, watches, sunglasses, and leather accessories with streamlined Cash on Delivery checkout for Bangladesh.",
+  "name": "JARRO",
+  "description": "A women's clothing e-commerce storefront featuring kurtis, 3-piece sets, co-ords, ponchos, and bangles with streamlined Cash on Delivery checkout for Bangladesh.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

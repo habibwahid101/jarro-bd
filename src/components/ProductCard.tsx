@@ -57,7 +57,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Frame */}
-      <div className={`relative w-full ${aspectRatio} overflow-hidden rounded-md bg-[#F4F2EB] border border-[#E8E5DE]/80 transition-all duration-300 group-hover:border-[#C5C1B8] group-hover:shadow-md`}>
+      <div className={`relative w-full ${aspectRatio} overflow-hidden rounded-md bg-[#FBE8E4] border border-[#F0D9DC]/80 transition-all duration-300 group-hover:border-[#E8B9C1] group-hover:shadow-md`}>
         
         {/* Main Image */}
         <img
@@ -71,12 +71,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Badges */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
           {product.isNew && (
-            <span className="text-[9px] uppercase tracking-[0.15em] font-bold px-2 py-0.5 bg-[#1C1B19] text-[#FAF9F6] rounded-xs shadow-xs">
+            <span className="text-[9px] uppercase tracking-[0.15em] font-bold px-2 py-0.5 bg-[#241A1E] text-[#FDF4F1] rounded-xs shadow-xs">
               New
             </span>
           )}
           {product.isBestSeller && !product.isNew && (
-            <span className="text-[9px] uppercase tracking-[0.15em] font-bold px-2 py-0.5 bg-[#9A6A3A] text-white rounded-xs shadow-xs">
+            <span className="text-[9px] uppercase tracking-[0.15em] font-bold px-2 py-0.5 bg-[#C2607D] text-white rounded-xs shadow-xs">
               Best Seller
             </span>
           )}
@@ -97,8 +97,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           onClick={handleWishlistToggle}
           className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition duration-200 z-10 cursor-pointer ${
             isLiked 
-              ? 'bg-[#1C1B19] text-[#E05656] shadow-md' 
-              : 'bg-white/80 backdrop-blur-xs text-[#1C1B19] hover:bg-white hover:text-[#9A6A3A] shadow-xs'
+              ? 'bg-[#241A1E] text-[#E05656] shadow-md' 
+              : 'bg-white/80 backdrop-blur-xs text-[#241A1E] hover:bg-white hover:text-[#C2607D] shadow-xs'
           }`}
           aria-label={isLiked ? 'Remove from wishlist' : 'Save to wishlist'}
         >
@@ -109,7 +109,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="absolute bottom-2.5 inset-x-2.5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
           <button
             onClick={handleQuickView}
-            className="flex-1 py-2 px-2 bg-white/95 backdrop-blur-xs hover:bg-white text-[#1C1B19] text-[11px] font-medium tracking-wider uppercase rounded-xs border border-[#E8E5DE] shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+            className="flex-1 py-2 px-2 bg-white/95 backdrop-blur-xs hover:bg-white text-[#241A1E] text-[11px] font-medium tracking-wider uppercase rounded-xs border border-[#F0D9DC] shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Quick View</span>
@@ -118,7 +118,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <button
             onClick={handleQuickAdd}
             disabled={product.stock <= 0}
-            className="flex-1 py-2 px-2 bg-[#1C1B19] hover:bg-[#2F2E2B] text-white text-[11px] font-medium tracking-wider uppercase rounded-xs shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+            className="flex-1 py-2 px-2 bg-[#241A1E] hover:bg-[#3D2830] text-white text-[11px] font-medium tracking-wider uppercase rounded-xs shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
           >
             {isAdding ? (
               <>
@@ -138,36 +138,36 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Information */}
       <div className="mt-3 flex flex-col space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[#9A6A3A]">
+          <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[#C2607D]">
             {product.brand}
           </span>
-          {product.fragranceSpecs && (
-            <span className="text-[10px] text-[#8C8880] tracking-wider">
-              {product.fragranceSpecs.fragranceFamily}
+          {product.clothingSpecs && (
+            <span className="text-[10px] text-[#A8828A] tracking-wider">
+              {product.clothingSpecs.fabric}
             </span>
           )}
-          {product.watchSpecs && (
-            <span className="text-[10px] text-[#8C8880] tracking-wider">
-              {product.watchSpecs.movement.split(' ')[0]}
+          {product.accessorySpecs && (
+            <span className="text-[10px] text-[#A8828A] tracking-wider">
+              {product.accessorySpecs.setPieces ? `${product.accessorySpecs.setPieces}-Piece` : product.accessorySpecs.material}
             </span>
           )}
         </div>
 
-        <h3 className="text-sm font-medium text-[#1C1B19] line-clamp-1 group-hover:text-[#9A6A3A] transition">
+        <h3 className="text-sm font-medium text-[#241A1E] line-clamp-1 group-hover:text-[#C2607D] transition">
           {product.name}
         </h3>
 
-        <p className="text-[11px] text-[#6B6864] line-clamp-1">
+        <p className="text-[11px] text-[#8C6A72] line-clamp-1">
           {product.subtitle}
         </p>
 
         {/* Pricing in BDT */}
         <div className="flex items-baseline gap-2 pt-0.5">
-          <span className="text-sm font-semibold text-[#1C1B19]">
+          <span className="text-sm font-semibold text-[#241A1E]">
             {formatBDT(product.price)}
           </span>
           {product.oldPrice && product.oldPrice > product.price && (
-            <span className="text-xs text-[#9A9790] line-through">
+            <span className="text-xs text-[#B98C93] line-through">
               {formatBDT(product.oldPrice)}
             </span>
           )}

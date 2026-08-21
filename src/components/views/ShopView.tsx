@@ -1,30 +1,33 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  SlidersHorizontal, 
-  X, 
-  ChevronDown, 
-  Search, 
-  RotateCcw, 
-  Sparkles, 
+import {
+  SlidersHorizontal,
+  X,
+  ChevronDown,
+  Search,
+  RotateCcw,
+  Sparkles,
   Check,
   Tag
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { ProductCard } from '../ProductCard';
-import { ProductCategory, FragranceFamily, FilterState } from '../../types';
+import { ProductCategory, FilterState } from '../../types';
 import { CATEGORIES_LIST, BRANDS_LIST } from '../../data/mockData';
 
+const MAX_PRICE = 5000;
+const SIZE_OPTIONS = ['S', 'M', 'L', 'XL', 'Free Size'];
+
 export const ShopView: React.FC = () => {
-  const { 
-    products, 
-    selectedCategory, 
-    setSelectedCategory, 
-    searchQuery, 
+  const {
+    products,
+    selectedCategory,
+    setSelectedCategory,
+    searchQuery,
     setSearchQuery,
     filters,
     setFilters,
     navigateTo,
-    formatBDT 
+    formatBDT
   } = useShop();
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -32,36 +35,28 @@ export const ShopView: React.FC = () => {
   // Dynamic category meta info
   const categoryMeta: Record<string, { title: string; subtitle: string }> = {
     all: {
-      title: 'The Complete Lifestyle Catalogue',
-      subtitle: 'Handcrafted extrait perfumery, automatic timepieces, Italian eyewear, and full-grain leather goods.'
+      title: 'The Full JARRO Catalogue',
+      subtitle: 'Kurtis, 3-piece sets, co-ords, ponchos, and bangles — real fits, real fabric, real you.'
     },
-    perfumes: {
-      title: 'High Perfumery & Extraits',
-      subtitle: 'Artisanal extraits formulated with up to 30% oil concentration for intense, long-lasting sillage.'
+    kurtis: {
+      title: 'Kurtis & Tunics',
+      subtitle: 'Printed and embroidered cotton, viscose, and georgette kurtis for everyday wear.'
     },
-    watches: {
-      title: 'Precision Mechanical Horology',
-      subtitle: '316L surgical steel, automatic calibres, and scratch-resistant sapphire crystals.'
+    'three-piece': {
+      title: '3-Piece Sets',
+      subtitle: 'Tunic, pants, and dupatta sets ready for Eid, weddings, and family gatherings.'
     },
-    sunglasses: {
-      title: 'Polarized Luxury Eyewear',
-      subtitle: 'Hand-polished Italian bio-acetate and ultralight Japanese beta-titanium with Cat-3 UV400 lenses.'
+    'co-ords': {
+      title: 'Co-ord Sets',
+      subtitle: 'Matching 2-piece tunic-and-pants sets, easy to style, easy to layer.'
     },
-    wallets: {
-      title: 'Full-Grain Leather Goods',
-      subtitle: 'Tuscan vegetable-tanned calfskin designed to hold Bangladeshi currency and RFID protection.'
-    },
-    bags: {
-      title: 'Bags & Travel Luggage',
-      subtitle: 'Heavyweight waxed duck canvas and pebble leather built for executive commuting and weekend voyages.'
-    },
-    caps: {
-      title: 'Caps & Headwear',
-      subtitle: '380 GSM washed cotton twill contoured for uncompromised, unbranded luxury.'
+    ponchos: {
+      title: 'Ponchos & Capes',
+      subtitle: 'Draped cape silhouettes with matching skirts — one of our most-requested styles.'
     },
     accessories: {
-      title: 'Everyday Essentials & Accoutrements',
-      subtitle: 'Tactile leather keychains, titanium clips, and lifestyle accoutrements.'
+      title: 'Bangles & Accessories',
+      subtitle: 'Traditional churi and bangle sets to finish any outfit.'
     }
   };
 
@@ -83,35 +78,23 @@ export const ShopView: React.FC = () => {
         const matchesCategory = product.category.toLowerCase().includes(query);
         const matchesTags = product.tags.some(t => t.toLowerCase().includes(query));
         const matchesDesc = product.description.toLowerCase().includes(query);
-        const matchesNotes = product.fragranceSpecs && (
-          product.fragranceSpecs.topNotes.some(n => n.toLowerCase().includes(query)) ||
-          product.fragranceSpecs.heartNotes.some(n => n.toLowerCase().includes(query)) ||
-          product.fragranceSpecs.baseNotes.some(n => n.toLowerCase().includes(query))
-        );
+        const matchesFabric = product.clothingSpecs
+          ? product.clothingSpecs.fabric.toLowerCase().includes(query) ||
+            product.clothingSpecs.pattern.toLowerCase().includes(query)
+          : false;
 
-        if (!matchesName && !matchesBrand && !matchesCategory && !matchesTags && !matchesDesc && !matchesNotes) {
+        if (!matchesName && !matchesBrand && !matchesCategory && !matchesTags && !matchesDesc && !matchesFabric) {
           return false;
         }
       }
 
-      // Fragrance family filter
-      if (filters.fragranceFamily && product.fragranceSpecs) {
-        if (!product.fragranceSpecs.fragranceFamily.toLowerCase().includes(filters.fragranceFamily.toLowerCase())) {
-          return false;
-        }
+      // Size filter — matches if any variant name contains the selected size
+      if (filters.size) {
+        const hasSize = product.variants.some(v => v.name.toLowerCase().includes(filters.size!.toLowerCase()));
+        if (!hasSize) return false;
       }
 
-      // Gender filter
-      if (filters.gender) {
-        if (product.fragranceSpecs && product.fragranceSpecs.gender !== filters.gender && product.fragranceSpecs.gender !== 'Unisex') {
-          return false;
-        }
-        if (product.sunglassSpecs && product.sunglassSpecs.gender !== filters.gender && product.sunglassSpecs.gender !== 'Unisex') {
-          return false;
-        }
-      }
-
-      // Brand filter
+      // Collection filter
       if (filters.brand && product.brand !== filters.brand) {
         return false;
       }
@@ -143,10 +126,9 @@ export const ShopView: React.FC = () => {
     setFilters({
       category: 'all',
       searchQuery: '',
-      fragranceFamily: undefined,
-      gender: undefined,
+      size: undefined,
       minPrice: 0,
-      maxPrice: 35000,
+      maxPrice: MAX_PRICE,
       inStockOnly: false,
       brand: undefined,
       sortBy: 'featured'
@@ -156,53 +138,52 @@ export const ShopView: React.FC = () => {
   const activeFilterCount = (
     (selectedCategory !== 'all' ? 1 : 0) +
     (searchQuery ? 1 : 0) +
-    (filters.fragranceFamily ? 1 : 0) +
-    (filters.gender ? 1 : 0) +
+    (filters.size ? 1 : 0) +
     (filters.brand ? 1 : 0) +
     (filters.inStockOnly ? 1 : 0) +
-    (filters.maxPrice < 35000 ? 1 : 0)
+    (filters.maxPrice < MAX_PRICE ? 1 : 0)
   );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      
+
       {/* -------------------------------------------------------------
           Catalogue Editorial Header
          ------------------------------------------------------------- */}
-      <div className="border-b border-[#E8E5DE] pb-6 mb-8">
+      <div className="border-b border-[#F0D9DC] pb-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-[#9A6A3A] mb-1">
-              <button 
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-[#C2607D] mb-1">
+              <button
                 onClick={() => setSelectedCategory('all')}
                 className="hover:underline cursor-pointer"
               >
-                Atelier
+                JARRO
               </button>
               <span>/</span>
-              <span>{selectedCategory === 'all' ? 'All Collections' : selectedCategory}</span>
+              <span>{selectedCategory === 'all' ? 'All Products' : selectedCategory}</span>
             </div>
-            
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#1C1B19]">
+
+            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#241A1E]">
               {currentMeta.title}
             </h1>
-            <p className="text-xs sm:text-sm text-[#6B6864] max-w-2xl mt-1.5 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#8C6A72] max-w-2xl mt-1.5 leading-relaxed">
               {currentMeta.subtitle}
             </p>
           </div>
 
-          <div className="text-xs text-[#8C8880] shrink-0 font-medium">
-            Showing <strong className="text-[#1C1B19]">{filteredProducts.length}</strong> creations
+          <div className="text-xs text-[#A8828A] shrink-0 font-medium">
+            Showing <strong className="text-[#241A1E]">{filteredProducts.length}</strong> pieces
           </div>
         </div>
 
         {/* Active Search / Filter Banner */}
         {(searchQuery || activeFilterCount > 0) && (
-          <div className="mt-4 pt-3 border-t border-[#E8E5DE] flex flex-wrap items-center gap-2">
-            <span className="text-xs text-[#6B6864] font-medium">Active criteria:</span>
-            
+          <div className="mt-4 pt-3 border-t border-[#F0D9DC] flex flex-wrap items-center gap-2">
+            <span className="text-xs text-[#8C6A72] font-medium">Active criteria:</span>
+
             {searchQuery && (
-              <span className="inline-flex items-center gap-1 text-xs bg-white border border-[#1C1B19] px-2.5 py-1 rounded-full text-[#1C1B19]">
+              <span className="inline-flex items-center gap-1 text-xs bg-white border border-[#241A1E] px-2.5 py-1 rounded-full text-[#241A1E]">
                 <span>Query: "{searchQuery}"</span>
                 <button onClick={() => setSearchQuery('')} className="hover:text-[#B91C1C] cursor-pointer">
                   <X className="w-3 h-3" />
@@ -211,7 +192,7 @@ export const ShopView: React.FC = () => {
             )}
 
             {selectedCategory !== 'all' && (
-              <span className="inline-flex items-center gap-1 text-xs bg-[#F4F2EB] border border-[#D9D5CC] px-2.5 py-1 rounded-full text-[#1C1B19]">
+              <span className="inline-flex items-center gap-1 text-xs bg-[#FBE8E4] border border-[#EFC9CE] px-2.5 py-1 rounded-full text-[#241A1E]">
                 <span>Category: {selectedCategory}</span>
                 <button onClick={() => setSelectedCategory('all')} className="hover:text-[#B91C1C] cursor-pointer">
                   <X className="w-3 h-3" />
@@ -219,27 +200,18 @@ export const ShopView: React.FC = () => {
               </span>
             )}
 
-            {filters.fragranceFamily && (
-              <span className="inline-flex items-center gap-1 text-xs bg-[#F4F2EB] border border-[#D9D5CC] px-2.5 py-1 rounded-full text-[#1C1B19]">
-                <span>Family: {filters.fragranceFamily}</span>
-                <button onClick={() => setFilters(prev => ({ ...prev, fragranceFamily: undefined }))} className="hover:text-[#B91C1C] cursor-pointer">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-
-            {filters.gender && (
-              <span className="inline-flex items-center gap-1 text-xs bg-[#F4F2EB] border border-[#D9D5CC] px-2.5 py-1 rounded-full text-[#1C1B19]">
-                <span>Silhouette: {filters.gender}</span>
-                <button onClick={() => setFilters(prev => ({ ...prev, gender: undefined }))} className="hover:text-[#B91C1C] cursor-pointer">
+            {filters.size && (
+              <span className="inline-flex items-center gap-1 text-xs bg-[#FBE8E4] border border-[#EFC9CE] px-2.5 py-1 rounded-full text-[#241A1E]">
+                <span>Size: {filters.size}</span>
+                <button onClick={() => setFilters(prev => ({ ...prev, size: undefined }))} className="hover:text-[#B91C1C] cursor-pointer">
                   <X className="w-3 h-3" />
                 </button>
               </span>
             )}
 
             {filters.brand && (
-              <span className="inline-flex items-center gap-1 text-xs bg-[#F4F2EB] border border-[#D9D5CC] px-2.5 py-1 rounded-full text-[#1C1B19]">
-                <span>House: {filters.brand}</span>
+              <span className="inline-flex items-center gap-1 text-xs bg-[#FBE8E4] border border-[#EFC9CE] px-2.5 py-1 rounded-full text-[#241A1E]">
+                <span>Collection: {filters.brand}</span>
                 <button onClick={() => setFilters(prev => ({ ...prev, brand: undefined }))} className="hover:text-[#B91C1C] cursor-pointer">
                   <X className="w-3 h-3" />
                 </button>
@@ -249,7 +221,7 @@ export const ShopView: React.FC = () => {
             {activeFilterCount > 1 && (
               <button
                 onClick={resetAllFilters}
-                className="text-xs text-[#9A6A3A] hover:underline flex items-center gap-1 cursor-pointer font-medium ml-2"
+                className="text-xs text-[#C2607D] hover:underline flex items-center gap-1 cursor-pointer font-medium ml-2"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset all filters</span>
@@ -263,98 +235,70 @@ export const ShopView: React.FC = () => {
           Catalogue Layout: Filter Sidebar + Products Grid
          ------------------------------------------------------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
+
         {/* Desktop Filters Sidebar */}
         <aside className="hidden lg:block space-y-8 pr-4">
-          
-          {/* Department Categories */}
+
+          {/* Departments */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1C1B19] mb-3">
+            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#241A1E] mb-3">
               Departments
             </h4>
-            <ul className="space-y-1.5 text-xs text-[#4A4744]">
+            <ul className="space-y-1.5 text-xs text-[#4A2E36]">
               {CATEGORIES_LIST.map((cat) => (
                 <li key={cat.id}>
                   <button
                     onClick={() => setSelectedCategory(cat.id as ProductCategory | 'all')}
                     className={`w-full text-left py-1 flex items-center justify-between transition cursor-pointer ${
                       selectedCategory === cat.id
-                        ? 'font-bold text-[#1C1B19] translate-x-1'
-                        : 'hover:text-[#1C1B19]'
+                        ? 'font-bold text-[#241A1E] translate-x-1'
+                        : 'hover:text-[#241A1E]'
                     }`}
                   >
                     <span>{cat.name}</span>
-                    <span className="text-[10px] text-[#A8A49C]">({cat.count})</span>
+                    <span className="text-[10px] text-[#C79AA3]">({cat.count})</span>
                   </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Fragrance Families (Visible for perfume category or all) */}
-          {(selectedCategory === 'perfumes' || selectedCategory === 'all') && (
-            <div className="pt-6 border-t border-[#E8E5DE]">
-              <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1C1B19] mb-3">
-                Fragrance Family
-              </h4>
-              <div className="space-y-1.5 text-xs">
-                {['Woody', 'Amber & Oriental', 'Fresh & Citrus', 'Floral'].map((fam) => (
-                  <button
-                    key={fam}
-                    onClick={() => setFilters(prev => ({
-                      ...prev,
-                      fragranceFamily: prev.fragranceFamily === fam ? undefined : fam
-                    }))}
-                    className={`w-full text-left py-1 flex items-center justify-between transition cursor-pointer ${
-                      filters.fragranceFamily === fam
-                        ? 'font-bold text-[#9A6A3A]'
-                        : 'text-[#4A4744] hover:text-[#1C1B19]'
-                    }`}
-                  >
-                    <span>{fam}</span>
-                    {filters.fragranceFamily === fam && <Check className="w-3.5 h-3.5" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Gender / Silhouette Target */}
-          <div className="pt-6 border-t border-[#E8E5DE]">
-            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1C1B19] mb-3">
-              Gender Silhouette
+          {/* Size Filter */}
+          <div className="pt-6 border-t border-[#F0D9DC]">
+            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#241A1E] mb-3">
+              Size
             </h4>
             <div className="flex flex-wrap gap-2">
-              {['Unisex', 'Men', 'Women'].map((g) => (
+              {SIZE_OPTIONS.map((s) => (
                 <button
-                  key={g}
+                  key={s}
                   onClick={() => setFilters(prev => ({
                     ...prev,
-                    gender: prev.gender === g ? undefined : g
+                    size: prev.size === s ? undefined : s
                   }))}
                   className={`text-xs px-3 py-1.5 rounded border transition cursor-pointer ${
-                    filters.gender === g
-                      ? 'bg-[#1C1B19] text-white border-[#1C1B19]'
-                      : 'bg-white text-[#4A4744] border-[#D9D5CC] hover:border-[#1C1B19]'
+                    filters.size === s
+                      ? 'bg-[#241A1E] text-white border-[#241A1E]'
+                      : 'bg-white text-[#4A2E36] border-[#EFC9CE] hover:border-[#241A1E]'
                   }`}
                 >
-                  {g}
+                  {s}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Brand Filter */}
-          <div className="pt-6 border-t border-[#E8E5DE]">
-            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1C1B19] mb-3">
-              Brand / House
+          {/* Collection Filter */}
+          <div className="pt-6 border-t border-[#F0D9DC]">
+            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#241A1E] mb-3">
+              Collection
             </h4>
             <select
               value={filters.brand || ''}
               onChange={(e) => setFilters(prev => ({ ...prev, brand: e.target.value || undefined }))}
-              className="w-full text-xs p-2.5 rounded border border-[#D9D5CC] bg-white text-[#1C1B19] focus:outline-none focus:border-[#1C1B19]"
+              className="w-full text-xs p-2.5 rounded border border-[#EFC9CE] bg-white text-[#241A1E] focus:outline-none focus:border-[#241A1E]"
             >
-              <option value="">All Houses</option>
+              <option value="">All Collections</option>
               {BRANDS_LIST.map(b => (
                 <option key={b.name} value={b.name}>{b.name}</option>
               ))}
@@ -362,34 +306,34 @@ export const ShopView: React.FC = () => {
           </div>
 
           {/* Price Max Filter */}
-          <div className="pt-6 border-t border-[#E8E5DE]">
+          <div className="pt-6 border-t border-[#F0D9DC]">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1C1B19]">
+              <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-[#241A1E]">
                 Max Price
               </h4>
-              <span className="text-xs font-semibold text-[#1C1B19]">
+              <span className="text-xs font-semibold text-[#241A1E]">
                 {formatBDT(filters.maxPrice)}
               </span>
             </div>
             <input
               type="range"
-              min={2000}
-              max={35000}
-              step={1000}
+              min={300}
+              max={MAX_PRICE}
+              step={50}
               value={filters.maxPrice}
               onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: Number(e.target.value) }))}
-              className="w-full accent-[#1C1B19] cursor-pointer"
+              className="w-full accent-[#241A1E] cursor-pointer"
             />
           </div>
 
           {/* In-Stock Toggle */}
-          <div className="pt-6 border-t border-[#E8E5DE]">
-            <label className="flex items-center gap-2.5 text-xs text-[#1C1B19] font-medium cursor-pointer">
+          <div className="pt-6 border-t border-[#F0D9DC]">
+            <label className="flex items-center gap-2.5 text-xs text-[#241A1E] font-medium cursor-pointer">
               <input
                 type="checkbox"
                 checked={filters.inStockOnly}
                 onChange={(e) => setFilters(prev => ({ ...prev, inStockOnly: e.target.checked }))}
-                className="w-4 h-4 rounded border-[#D9D5CC] text-[#1C1B19] focus:ring-0 accent-[#1C1B19]"
+                className="w-4 h-4 rounded border-[#EFC9CE] text-[#241A1E] focus:ring-0 accent-[#241A1E]"
               />
               <span>In-Stock in Dhaka Hub only</span>
             </label>
@@ -399,32 +343,32 @@ export const ShopView: React.FC = () => {
 
         {/* Products Grid & Controls */}
         <div className="lg:col-span-3 space-y-6">
-          
+
           {/* Controls Bar (Sort & Mobile Filter Trigger) */}
-          <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-[#E8E5DE]">
-            
+          <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-[#F0D9DC]">
+
             {/* Mobile Filter Button */}
             <button
               onClick={() => setIsMobileFilterOpen(true)}
-              className="lg:hidden flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#1C1B19] px-3 py-1.5 rounded bg-[#F4F2EB] cursor-pointer"
+              className="lg:hidden flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#241A1E] px-3 py-1.5 rounded bg-[#FBE8E4] cursor-pointer"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#9A6A3A]" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#C2607D]" />
               <span>Filters {activeFilterCount > 0 && `(${activeFilterCount})`}</span>
             </button>
 
-            <span className="hidden lg:inline text-xs text-[#6B6864]">
+            <span className="hidden lg:inline text-xs text-[#8C6A72]">
               Displaying {filteredProducts.length} pieces
             </span>
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2 ml-auto">
-              <span className="text-xs text-[#6B6864] hidden sm:inline">Sort by:</span>
+              <span className="text-xs text-[#8C6A72] hidden sm:inline">Sort by:</span>
               <select
                 value={filters.sortBy}
                 onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-                className="text-xs py-1.5 px-3 rounded border border-[#D9D5CC] bg-[#FAF9F6] text-[#1C1B19] font-medium focus:outline-none focus:border-[#1C1B19] cursor-pointer"
+                className="text-xs py-1.5 px-3 rounded border border-[#EFC9CE] bg-[#FDF4F1] text-[#241A1E] font-medium focus:outline-none focus:border-[#241A1E] cursor-pointer"
               >
-                <option value="featured">Editorial Featured</option>
+                <option value="featured">Featured</option>
                 <option value="newest">Newest Arrivals</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
@@ -442,19 +386,19 @@ export const ShopView: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="py-20 text-center bg-white rounded-xl border border-[#E8E5DE] p-8">
-              <div className="w-16 h-16 rounded-full bg-[#F4F2EB] flex items-center justify-center mx-auto mb-4 text-[#A8A49C]">
+            <div className="py-20 text-center bg-white rounded-xl border border-[#F0D9DC] p-8">
+              <div className="w-16 h-16 rounded-full bg-[#FBE8E4] flex items-center justify-center mx-auto mb-4 text-[#C79AA3]">
                 <Search className="w-8 h-8" />
               </div>
-              <h3 className="font-serif text-xl font-medium text-[#1C1B19]">
-                No matching creations found
+              <h3 className="font-serif text-xl font-medium text-[#241A1E]">
+                No matching pieces found
               </h3>
-              <p className="text-xs text-[#6B6864] max-w-sm mx-auto mt-2 mb-6">
+              <p className="text-xs text-[#8C6A72] max-w-sm mx-auto mt-2 mb-6">
                 Try widening your price range, clearing specific filters, or searching with broader keywords.
               </p>
               <button
                 onClick={resetAllFilters}
-                className="px-6 py-2.5 bg-[#1C1B19] text-white text-xs font-semibold uppercase tracking-wider rounded-xs hover:bg-[#2A2927] transition cursor-pointer"
+                className="px-6 py-2.5 bg-[#241A1E] text-white text-xs font-semibold uppercase tracking-wider rounded-xs hover:bg-[#3D2830] transition cursor-pointer"
               >
                 Reset All Filters
               </button>
@@ -470,22 +414,22 @@ export const ShopView: React.FC = () => {
          ------------------------------------------------------------- */}
       {isMobileFilterOpen && (
         <div className="lg:hidden fixed inset-0 z-50 overflow-hidden">
-          <div 
+          <div
             onClick={() => setIsMobileFilterOpen(false)}
             className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
           />
 
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-xs bg-[#FAF9F6] shadow-2xl flex flex-col justify-between p-6 border-l border-[#E8E5DE]">
-              
-              <div className="flex items-center justify-between pb-4 border-b border-[#E8E5DE]">
+            <div className="w-screen max-w-xs bg-[#FDF4F1] shadow-2xl flex flex-col justify-between p-6 border-l border-[#F0D9DC]">
+
+              <div className="flex items-center justify-between pb-4 border-b border-[#F0D9DC]">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-[#9A6A3A]" />
-                  <h3 className="font-serif text-base font-bold text-[#1C1B19]">Refine Catalogue</h3>
+                  <SlidersHorizontal className="w-4 h-4 text-[#C2607D]" />
+                  <h3 className="font-serif text-base font-bold text-[#241A1E]">Refine Catalogue</h3>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="p-1 text-[#6B6864] hover:text-[#1C1B19] cursor-pointer"
+                  className="p-1 text-[#8C6A72] hover:text-[#241A1E] cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -494,13 +438,13 @@ export const ShopView: React.FC = () => {
               <div className="flex-1 overflow-y-auto py-6 space-y-6">
                 {/* Category Selection */}
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1C1B19] mb-2">Category</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#241A1E] mb-2">Category</h4>
                   <div className="space-y-1 text-xs">
                     {CATEGORIES_LIST.map(cat => (
                       <button
                         key={cat.id}
                         onClick={() => setSelectedCategory(cat.id as ProductCategory | 'all')}
-                        className={`w-full text-left py-1.5 px-2 rounded ${selectedCategory === cat.id ? 'bg-[#1C1B19] text-white font-bold' : 'text-[#4A4744]'}`}
+                        className={`w-full text-left py-1.5 px-2 rounded ${selectedCategory === cat.id ? 'bg-[#241A1E] text-white font-bold' : 'text-[#4A2E36]'}`}
                       >
                         {cat.name}
                       </button>
@@ -508,17 +452,17 @@ export const ShopView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Fragrance Family */}
+                {/* Size */}
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1C1B19] mb-2">Fragrance Family</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#241A1E] mb-2">Size</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {['Woody', 'Amber & Oriental', 'Fresh & Citrus', 'Floral'].map(fam => (
+                    {SIZE_OPTIONS.map(s => (
                       <button
-                        key={fam}
-                        onClick={() => setFilters(prev => ({ ...prev, fragranceFamily: prev.fragranceFamily === fam ? undefined : fam }))}
-                        className={`text-xs px-2.5 py-1 rounded border ${filters.fragranceFamily === fam ? 'bg-[#9A6A3A] text-white border-[#9A6A3A]' : 'bg-white border-[#D9D5CC]'}`}
+                        key={s}
+                        onClick={() => setFilters(prev => ({ ...prev, size: prev.size === s ? undefined : s }))}
+                        className={`text-xs px-2.5 py-1 rounded border ${filters.size === s ? 'bg-[#C2607D] text-white border-[#C2607D]' : 'bg-white border-[#EFC9CE]'}`}
                       >
-                        {fam}
+                        {s}
                       </button>
                     ))}
                   </div>
@@ -532,39 +476,39 @@ export const ShopView: React.FC = () => {
                   </div>
                   <input
                     type="range"
-                    min={2000}
-                    max={35000}
-                    step={1000}
+                    min={300}
+                    max={MAX_PRICE}
+                    step={50}
                     value={filters.maxPrice}
                     onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: Number(e.target.value) }))}
-                    className="w-full accent-[#1C1B19]"
+                    className="w-full accent-[#241A1E]"
                   />
                 </div>
 
                 {/* In Stock */}
                 <div>
-                  <label className="flex items-center gap-2 text-xs font-medium text-[#1C1B19]">
+                  <label className="flex items-center gap-2 text-xs font-medium text-[#241A1E]">
                     <input
                       type="checkbox"
                       checked={filters.inStockOnly}
                       onChange={(e) => setFilters(prev => ({ ...prev, inStockOnly: e.target.checked }))}
-                      className="w-4 h-4 rounded border-[#D9D5CC] accent-[#1C1B19]"
+                      className="w-4 h-4 rounded border-[#EFC9CE] accent-[#241A1E]"
                     />
                     <span>In-Stock only</span>
                   </label>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#E8E5DE] space-y-2">
+              <div className="pt-4 border-t border-[#F0D9DC] space-y-2">
                 <button
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="w-full py-3 bg-[#1C1B19] text-white text-xs font-bold uppercase tracking-wider rounded"
+                  className="w-full py-3 bg-[#241A1E] text-white text-xs font-bold uppercase tracking-wider rounded"
                 >
                   Show {filteredProducts.length} Results
                 </button>
                 <button
                   onClick={resetAllFilters}
-                  className="w-full py-2 bg-transparent text-[#6B6864] text-xs font-medium underline text-center"
+                  className="w-full py-2 bg-transparent text-[#8C6A72] text-xs font-medium underline text-center"
                 >
                   Reset all
                 </button>
