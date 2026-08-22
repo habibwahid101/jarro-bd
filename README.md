@@ -8,13 +8,13 @@ catalogue and orders are backed by AWS DynamoDB; admin login is backed by AWS
 Cognito. Cart and wishlist are kept client-side (per-visitor, in
 `localStorage`).
 
-> **Front-end rebrand status:** branding, colors, categories, and mock
-> product data have been updated for JARRO. The AWS wiring below (table
-> names, Cognito pool, Amplify app) still points at the **original Valent &
-> Co. infrastructure** and has not been reconfigured for JARRO — see
-> [Environment variables](#environment-variables). Until you provision new
-> AWS resources for JARRO and set `.env` accordingly, the app runs on the
-> bundled demo data only (read-only; no real checkout/admin backend).
+> **Backend status:** JARRO now has its own AWS resources, fully separate
+> from Valent & Co.'s — see [Infrastructure](#infrastructure) below. `.env`
+> on this machine is already pointed at them (not committed to git — see
+> `.gitignore`). The Products table has been seeded with the 10 sample items
+> from `mockData.ts`; the Orders table starts empty. Amplify Hosting has not
+> been set up yet — this is currently backend-only (DynamoDB + Cognito),
+> deploy separately whenever you're ready.
 
 ## Stack
 
@@ -22,7 +22,7 @@ Cognito. Cart and wishlist are kept client-side (per-visitor, in
 - Tailwind CSS v4
 - AWS DynamoDB (products + orders), via the AWS SDK v3 (`@aws-sdk/lib-dynamodb`)
 - AWS Cognito User Pool (admin auth) + Identity Pool (temporary, scoped IAM credentials)
-- AWS Amplify Hosting (build + deploy)
+- AWS Amplify Hosting (build + deploy) — not yet set up for JARRO, see [Infrastructure](#infrastructure)
 
 ## Prerequisites
 
@@ -65,24 +65,20 @@ See `.env.example` for a template.
 
 ## Infrastructure
 
-Provisioned in AWS (region `us-east-1`):
+Provisioned in AWS (region `us-east-1`), separate from Valent & Co.'s own
+resources — nothing here is shared with that project:
 
-The resources below are the **original Valent & Co. infrastructure** this
-project was cloned from — they are not JARRO's own AWS resources. Provision
-equivalent resources for JARRO (e.g. `Jarro-Products`, `Jarro-Orders`, a new
-Cognito pool, a new Amplify app) and point `.env` at them before relying on
-the backend.
-
-- **DynamoDB** — `ValentCo-Products`, `ValentCo-Orders` (with `orderNumber-index`
-  and `customerMobile-index` GSIs on Orders)
-- **Cognito User Pool** — admin accounts, app client `valent-co-web` (no secret,
-  `USER_PASSWORD_AUTH` + SRP enabled, no OAuth flows)
-- **Cognito Identity Pool** — issues two IAM roles via unauthenticated/authenticated
-  federation: `ValentCo-GuestRole` (read products; create + look up own orders only)
-  and `ValentCo-AdminRole` (full read/write on both tables, only assumable with a
+- **DynamoDB** — `JARRO-Products`, `JARRO-Orders` (with `orderNumber-index`
+  and `customerMobile-index` GSIs on Orders), both on-demand billing
+- **Cognito User Pool** — `JARRO-AdminPool` (`us-east-1_4MANSDm5m`), app client
+  `jarro-web` (no secret, `USER_PASSWORD_AUTH` + SRP enabled, no OAuth flows)
+- **Cognito Identity Pool** — `JarroIdentityPool` (`us-east-1:fe33ac71-157e-48bd-88f4-d42fe6c282f0`),
+  issues two IAM roles via unauthenticated/authenticated federation:
+  `JARRO-GuestRole` (read products; create + look up own orders only) and
+  `JARRO-AdminRole` (full read/write on both tables, only assumable with a
   valid admin ID token)
-- **Amplify Hosting** — app `Valent-Co` (`d11od1b3r797fb`), builds from the `main`
-  branch once connected to this GitHub repository
+- **Amplify Hosting** — not yet provisioned. Deploying JARRO (Amplify, Vercel,
+  or otherwise) is a separate step from the backend above.
 
 ## Scripts
 
@@ -95,8 +91,12 @@ the backend.
 ## Admin access
 
 The admin panel (`/` → Admin) is gated behind Cognito sign-in
-(`src/components/AdminGate.tsx`). Create admin users in the Cognito User Pool
-console. **Change the default admin password after first login.**
+(`src/components/AdminGate.tsx`). A first admin account already exists in
+`JARRO-AdminPool` — see the credentials shared with you separately (not
+recorded in this repo). Create additional admin users in the Cognito User
+Pool console. **Change the password after first login** — there is currently
+no in-app change-password flow, so do this via the Cognito console or
+`aws cognito-idp admin-set-user-password`.
 
 ## Project status
 

@@ -1,9 +1,9 @@
 /**
- * Admin sign-in against the Cognito User Pool (ValentCo-AdminPool — inherited
- * from the Valent & Co. clone; not yet a JARRO-specific pool, see README.md).
- * On success, the returned ID token is used to assume the "authenticated"
- * (admin) role in the Cognito Identity Pool, which grants write access to
- * DynamoDB (see aws.ts + IAM role ValentCo-AdminRole).
+ * Admin sign-in against JARRO's own Cognito User Pool (JARRO-AdminPool —
+ * see README.md → Infrastructure). On success, the returned ID token is
+ * used to assume the "authenticated" (admin) role in the Cognito Identity
+ * Pool, which grants write access to DynamoDB (see aws.ts + IAM role
+ * JARRO-AdminRole).
  */
 // The Cognito Identity Provider SDK is dynamically imported inside
 // adminSignIn() below rather than statically here, so its ~considerable

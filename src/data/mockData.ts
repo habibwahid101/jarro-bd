@@ -1,13 +1,35 @@
 import { Product, Order } from '../types';
 
 // -------------------------------------------------------------------------
-// PLACEHOLDER PRODUCT PHOTOGRAPHY
+// PRODUCT PHOTOGRAPHY
 // -------------------------------------------------------------------------
-// These images are neutral placeholders (placehold.co) themed to the new
-// blush/rose palette so the storefront never shows a broken image. Swap
-// each `images` array below for real JARRO product photography (the same
-// photos already posted on facebook.com/Jarrobd work well) before launch.
+// Real JARRO product photos (sourced from facebook.com/Jarrobd), matched to
+// each product by category/print and cleaned up (cropped to a consistent
+// portrait frame, colour/contrast enhanced) for a polished storefront look.
+// acc-01/acc-02 share one real bangle-set photo, colour-graded for each
+// listed colourway (red&gold / emerald&gold) — a standard technique for
+// showing a colourway variant from a single physical product shoot.
 // -------------------------------------------------------------------------
+import kur01a from '../assets/products/kur-01-a.jpg';
+import kur01b from '../assets/products/kur-01-b.jpg';
+import kur02a from '../assets/products/kur-02-a.jpg';
+import kur02b from '../assets/products/kur-02-b.jpg';
+import kur03a from '../assets/products/kur-03-a.jpg';
+import kur03b from '../assets/products/kur-03-b.jpg';
+import tpc01a from '../assets/products/tpc-01-a.jpg';
+import tpc01b from '../assets/products/tpc-01-b.jpg';
+import tpc02a from '../assets/products/tpc-02-a.jpg';
+import tpc02b from '../assets/products/tpc-02-b.jpg';
+import cor01a from '../assets/products/cor-01-a.jpg';
+import cor01b from '../assets/products/cor-01-b.jpg';
+import pon01a from '../assets/products/pon-01-a.jpg';
+import pon01b from '../assets/products/pon-01-b.jpg';
+import pon02a from '../assets/products/pon-02-a.jpg';
+import pon02b from '../assets/products/pon-02-b.jpg';
+import acc01a from '../assets/products/acc-01-a.jpg';
+import acc01b from '../assets/products/acc-01-b.jpg';
+import acc02a from '../assets/products/acc-02-a.jpg';
+import acc02b from '../assets/products/acc-02-b.jpg';
 
 export const INITIAL_PRODUCTS: Product[] = [
   // -------------------------------------------------------------
@@ -31,10 +53,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isFeatured: true,
     rating: 4.8,
     reviewCount: 19,
-    images: [
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=JARRO+Kurti',
-      'https://placehold.co/800x1000/FBE8E4/241A1E?text=Emerald+Palm+Print',
-    ],
+    images: [kur01a, kur01b],
     variants: [
       { id: 'v-kur-01-s', name: 'Size S', sku: 'JR-KUR-001-S', price: 1290, oldPrice: 1550, stock: 4, inStock: true },
       { id: 'v-kur-01-m', name: 'Size M', sku: 'JR-KUR-001-M', price: 1290, oldPrice: 1550, stock: 7, inStock: true },
@@ -70,10 +89,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isNew: true,
     rating: 4.7,
     reviewCount: 12,
-    images: [
-      'https://placehold.co/800x1000/EFC9CE/241A1E?text=Sky+Blue+Tunic',
-      'https://placehold.co/800x1000/FBE8E4/241A1E?text=Abstract+Print',
-    ],
+    images: [kur02a, kur02b],
     variants: [
       { id: 'v-kur-02-s', name: 'Size S', sku: 'JR-KUR-002-S', price: 1150, stock: 5, inStock: true },
       { id: 'v-kur-02-m', name: 'Size M', sku: 'JR-KUR-002-M', price: 1150, stock: 6, inStock: true },
@@ -111,10 +127,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isFeatured: true,
     rating: 5.0,
     reviewCount: 27,
-    images: [
-      'https://placehold.co/800x1000/E8B9C1/241A1E?text=Blush+Pink+Kurti',
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=Floral+Embroidery',
-    ],
+    images: [kur03a, kur03b],
     variants: [
       { id: 'v-kur-03-s', name: 'Size S', sku: 'JR-KUR-003-S', price: 1650, oldPrice: 1900, stock: 3, inStock: true },
       { id: 'v-kur-03-m', name: 'Size M', sku: 'JR-KUR-003-M', price: 1650, oldPrice: 1900, stock: 5, inStock: true },
@@ -156,11 +169,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isFeatured: true,
     rating: 4.9,
     reviewCount: 34,
-    images: [
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=3-Piece+Set',
-      'https://placehold.co/800x1000/EFC9CE/241A1E?text=Powder+Blue+Floral',
-      'https://placehold.co/800x1000/FBE8E4/241A1E?text=With+Dupatta',
-    ],
+    images: [tpc01a, tpc01b],
     variants: [
       { id: 'v-tpc-01-s', name: 'Size S', sku: 'JR-TPC-001-S', price: 2450, oldPrice: 2800, stock: 2, inStock: true },
       { id: 'v-tpc-01-m', name: 'Size M', sku: 'JR-TPC-001-M', price: 2450, oldPrice: 2800, stock: 4, inStock: true },
@@ -198,10 +207,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isFeatured: true,
     rating: 4.8,
     reviewCount: 15,
-    images: [
-      'https://placehold.co/800x1000/E8B9C1/241A1E?text=Magenta+Gold+Set',
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=Festive+3-Piece',
-    ],
+    images: [tpc02a, tpc02b],
     variants: [
       { id: 'v-tpc-02-s', name: 'Size S', sku: 'JR-TPC-002-S', price: 2650, stock: 2, inStock: true },
       { id: 'v-tpc-02-m', name: 'Size M', sku: 'JR-TPC-002-M', price: 2650, stock: 3, inStock: true },
@@ -243,10 +249,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isBestSeller: true,
     rating: 4.9,
     reviewCount: 21,
-    images: [
-      'https://placehold.co/800x1000/EFC9CE/241A1E?text=Terracotta+Co-ord',
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=Matching+Set',
-    ],
+    images: [cor01a, cor01b],
     variants: [
       { id: 'v-cor-01-s', name: 'Size S', sku: 'JR-COR-001-S', price: 2150, oldPrice: 2450, stock: 3, inStock: true },
       { id: 'v-cor-01-m', name: 'Size M', sku: 'JR-COR-001-M', price: 2150, oldPrice: 2450, stock: 5, inStock: true },
@@ -288,10 +291,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isFeatured: true,
     rating: 4.8,
     reviewCount: 23,
-    images: [
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=Grey+Poncho+Set',
-      'https://placehold.co/800x1000/FBE8E4/241A1E?text=Draped+Cape',
-    ],
+    images: [pon01a, pon01b],
     variants: [
       { id: 'v-pon-01-free', name: 'Free Size', sku: 'JR-PON-001-FS', price: 1550, stock: 16, inStock: true },
     ],
@@ -325,10 +325,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     stock: 10,
     rating: 4.7,
     reviewCount: 9,
-    images: [
-      'https://placehold.co/800x1000/FBE8E4/241A1E?text=Ivory+Poncho',
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=Matching+Skirt',
-    ],
+    images: [pon02a, pon02b],
     variants: [
       { id: 'v-pon-02-free', name: 'Free Size', sku: 'JR-PON-002-FS', price: 1450, oldPrice: 1650, stock: 10, inStock: true },
     ],
@@ -366,10 +363,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isBestSeller: true,
     rating: 4.9,
     reviewCount: 31,
-    images: [
-      'https://placehold.co/800x1000/E8B9C1/241A1E?text=Red+Gold+Bangles',
-      'https://placehold.co/800x1000/F0D9DC/241A1E?text=12-Piece+Set',
-    ],
+    images: [acc01a, acc01b],
     variants: [
       { id: 'v-acc-01-24', name: '2.4 inch', sku: 'JR-ACC-001-24', price: 450, stock: 10, inStock: true },
       { id: 'v-acc-01-26', name: '2.6 inch', sku: 'JR-ACC-001-26', price: 450, stock: 8, inStock: true },
@@ -400,10 +394,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     isNew: true,
     rating: 4.8,
     reviewCount: 14,
-    images: [
-      'https://placehold.co/800x1000/EFC9CE/241A1E?text=Green+Gold+Bangles',
-      'https://placehold.co/800x1000/FBE8E4/241A1E?text=Festive+Set',
-    ],
+    images: [acc02a, acc02b],
     variants: [
       { id: 'v-acc-02-24', name: '2.4 inch', sku: 'JR-ACC-002-24', price: 450, oldPrice: 550, stock: 7, inStock: true },
       { id: 'v-acc-02-26', name: '2.6 inch', sku: 'JR-ACC-002-26', price: 450, oldPrice: 550, stock: 7, inStock: true },
@@ -439,7 +430,7 @@ export const INITIAL_ORDERS: Order[] = [
         productName: 'Powder Blue Floral 3-Piece Set',
         brand: 'JARRO Festive Edit',
         variantName: 'Size M',
-        image: 'https://placehold.co/400x500/F0D9DC/241A1E?text=JARRO',
+        image: tpc01a,
         quantity: 1,
         unitPrice: 2450,
         totalPrice: 2450
@@ -449,7 +440,7 @@ export const INITIAL_ORDERS: Order[] = [
         productName: 'Royal Red & Gold Bangle Set',
         brand: 'JARRO Bangle House',
         variantName: '2.6 inch',
-        image: 'https://placehold.co/400x500/E8B9C1/241A1E?text=JARRO',
+        image: acc01a,
         quantity: 1,
         unitPrice: 450,
         totalPrice: 450
@@ -482,7 +473,7 @@ export const INITIAL_ORDERS: Order[] = [
         productName: 'Blush Pink Floral Embroidered Kurti',
         brand: 'JARRO Festive Edit',
         variantName: 'Size L',
-        image: 'https://placehold.co/400x500/E8B9C1/241A1E?text=JARRO',
+        image: kur03a,
         quantity: 1,
         unitPrice: 1650,
         totalPrice: 1650
@@ -514,7 +505,7 @@ export const INITIAL_ORDERS: Order[] = [
         productName: 'Rustic Terracotta Co-ord Set',
         brand: 'JARRO Co-ord Studio',
         variantName: 'Size M',
-        image: 'https://placehold.co/400x500/EFC9CE/241A1E?text=JARRO',
+        image: cor01a,
         quantity: 1,
         unitPrice: 2150,
         totalPrice: 2150
@@ -561,12 +552,12 @@ export const BANGLADESH_DISTRICTS = [
 ];
 
 export const CATEGORIES_LIST = [
-  { id: 'all', name: 'All Products', count: 10, image: 'https://placehold.co/800x800/FBE8E4/241A1E?text=JARRO' },
-  { id: 'kurtis', name: 'Kurtis & Tunics', count: 3, tag: 'Everyday Prints', image: 'https://placehold.co/800x800/F0D9DC/241A1E?text=Kurtis' },
-  { id: 'three-piece', name: '3-Piece Sets', count: 2, tag: 'Festive Edit', image: 'https://placehold.co/800x800/EFC9CE/241A1E?text=3-Piece' },
-  { id: 'co-ords', name: 'Co-ord Sets', count: 1, tag: 'Matching Sets', image: 'https://placehold.co/800x800/E8B9C1/241A1E?text=Co-ords' },
-  { id: 'ponchos', name: 'Ponchos & Capes', count: 2, tag: 'Signature Drape', image: 'https://placehold.co/800x800/FBE8E4/241A1E?text=Ponchos' },
-  { id: 'accessories', name: 'Bangles & Accessories', count: 2, tag: 'Festive Finish', image: 'https://placehold.co/800x800/F0D9DC/241A1E?text=Accessories' }
+  { id: 'all', name: 'All Products', count: 10, image: tpc02a },
+  { id: 'kurtis', name: 'Kurtis & Tunics', count: 3, tag: 'Everyday Prints', image: kur03a },
+  { id: 'three-piece', name: '3-Piece Sets', count: 2, tag: 'Festive Edit', image: tpc01a },
+  { id: 'co-ords', name: 'Co-ord Sets', count: 1, tag: 'Matching Sets', image: cor01a },
+  { id: 'ponchos', name: 'Ponchos & Capes', count: 2, tag: 'Signature Drape', image: pon02a },
+  { id: 'accessories', name: 'Bangles & Accessories', count: 2, tag: 'Festive Finish', image: acc01a }
 ];
 
 export const BRANDS_LIST = [
