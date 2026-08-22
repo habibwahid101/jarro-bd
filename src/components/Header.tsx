@@ -121,19 +121,13 @@ export const Header: React.FC = () => {
           <div className="flex-1 min-w-0 text-center lg:flex-none lg:w-2/4">
             <button
               onClick={() => navigateTo('home')}
-              className="inline-flex flex-col items-center max-w-full cursor-pointer group"
+              className="inline-flex items-center justify-center max-w-full cursor-pointer group"
             >
               <img
                 src={jarroLogo}
                 alt="JARRO"
-                className="h-7 sm:h-9 lg:h-11 w-auto object-contain group-hover:opacity-75 transition duration-300"
+                className="h-8 sm:h-10 lg:h-12 w-auto object-contain group-hover:opacity-75 transition duration-300"
               />
-              {/* Tagline is intentionally sized well below the logo mark
-                  above (roughly a third of its height on mobile) so it
-                  reads as a caption, not a second headline. */}
-              <span className="block text-[6px] sm:text-[9px] lg:text-[10px] tracking-[0.1em] sm:tracking-[0.35em] text-[#8C6A72] uppercase mt-0.5 whitespace-nowrap truncate">
-                Real Fits, Real You
-              </span>
             </button>
           </div>
 
