@@ -195,3 +195,12 @@ describe('ShopContext — admin product actions (AWS unconfigured, local-state f
     expect(updated?.price).toBe(12345);
   });
 });
+
+describe('ShopContext — uploadProductImage', () => {
+  it('refuses to upload without an active admin session, rather than silently no-op-ing', async () => {
+    const { result } = renderHook(() => useShop(), { wrapper });
+    const file = new File([new Uint8Array(10)], 'photo.jpg', { type: 'image/jpeg' });
+
+    await expect(result.current.uploadProductImage(file)).rejects.toThrow(/signed in as an admin/i);
+  });
+});

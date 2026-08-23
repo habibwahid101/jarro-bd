@@ -30,6 +30,7 @@ export default defineConfig({
       VITE_COGNITO_CLIENT_ID: '',
       VITE_DDB_PRODUCTS_TABLE: '',
       VITE_DDB_ORDERS_TABLE: '',
+      VITE_S3_PRODUCT_IMAGES_BUCKET: '',
     },
   },
 });

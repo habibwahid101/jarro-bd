@@ -102,6 +102,28 @@ resources — nothing here is shared with that project:
   and has been deleted — this repo's `jarro-bd` app is the only one that
   matters.
 
+## Deploying & rolling back
+
+Every push to `main` auto-builds and deploys via the Amplify↔GitHub webhook
+— there's no separate deploy step. If a bad deploy needs to be undone:
+
+1. AWS Console → Amplify → app `jarro-bd` → branch `main` → **Deployments**.
+2. Find the last known-good build in the list and choose **Redeploy this
+   version** (this re-runs that exact build's artifacts — it does not
+   re-run `npm install`/`npm run build`, so it's fast and can't pick up an
+   unrelated dependency change).
+3. This does **not** revert the Git history — `main` still has the bad
+   commit on top. Follow up with a proper `git revert` (or a fix-forward
+   commit) once you're not under time pressure, so the next push doesn't
+   silently re-deploy the same bug.
+
+Environment variable changes (App settings → Environment variables) only
+take effect on the *next* build — editing them there doesn't touch what's
+currently live. Either push a commit or use **Redeploy this version →
+Redeploy with existing artifacts** is not sufficient for an env var change
+specifically; use the **Actions → Run build** option (or push an empty
+commit) to force a fresh build that actually picks up the new values.
+
 ## Scripts
 
 - `npm run dev` — start the Vite dev server
