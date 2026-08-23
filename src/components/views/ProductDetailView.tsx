@@ -182,9 +182,8 @@ export const ProductDetailView: React.FC = () => {
                   <p className="text-[11px] text-[#8C6A72]">Ask about sizing, fabric, or Dhaka delivery on WhatsApp.</p>
                 </div>
               </div>
-              {/* TODO: replace with JARRO's real WhatsApp number (currently a placeholder). */}
               <a
-                href={`https://wa.me/8801000000000?text=Hello%20JARRO%2C%20I%20am%20inquiring%20about%20${encodeURIComponent(product.name)}`}
+                href={`https://wa.me/8801823885515?text=Hello%20JARRO%2C%20I%20am%20inquiring%20about%20${encodeURIComponent(product.name)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3.5 py-2 rounded-lg bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#1b8a43] text-xs font-semibold transition"

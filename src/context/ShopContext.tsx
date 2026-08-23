@@ -89,14 +89,14 @@ interface ShopContextType {
 
   // Checkout & Order
   createOrder: (customerInfo: CustomerInfo, deliveryFee: number) => Promise<Order>;
-  updateOrderStatus: (orderId: string, status: OrderStatus, adminNotes?: string) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus, adminNotes?: string) => Promise<void>;
   findOrder: (query: string) => Promise<Order | undefined>;
 
   // Admin inventory
   addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
-  deleteProduct: (id: string) => void;
-  updateStock: (id: string, stock: number) => void;
+  deleteProduct: (id: string) => Promise<void>;
+  updateStock: (id: string, stock: number) => Promise<void>;
   resetToDemoData: () => void;
 
   // Helpers
@@ -467,7 +467,32 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newOrder;
   };
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus, adminNotes?: string) => {
+  // Persists to DynamoDB first and waits for confirmation before updating
+  // local state, matching addProduct/updateProduct: previously this was
+  // fire-and-forget, so the admin UI would show the new status immediately
+  // even if the DynamoDB write actually failed, silently losing the update.
+  const updateOrderStatus = async (orderId: string, status: OrderStatus, adminNotes?: string): Promise<void> => {
+    if (adminClient) {
+      const values: Record<string, unknown> = adminNotes !== undefined
+        ? { ':status': status, ':notes': adminNotes }
+        : { ':status': status };
+      const expr = adminNotes !== undefined
+        ? 'SET #status = :status, adminNotes = :notes'
+        : 'SET #status = :status';
+      try {
+        await adminClient.send(new UpdateCommand({
+          TableName: ORDERS_TABLE,
+          Key: { id: orderId },
+          UpdateExpression: expr,
+          ExpressionAttributeNames: { '#status': 'status' },
+          ExpressionAttributeValues: values,
+        }));
+      } catch (err) {
+        console.error('Failed to update order status in DynamoDB.', err);
+        throw new Error('Could not update this order. Please check your connection and try again.');
+      }
+    }
+
     setOrders(prev => prev.map(ord => {
       if (ord.id === orderId) {
         return {
@@ -478,24 +503,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return ord;
     }));
-
-    if (adminClient) {
-      const values: Record<string, unknown> = adminNotes !== undefined
-        ? { ':status': status, ':notes': adminNotes }
-        : { ':status': status };
-      const expr = adminNotes !== undefined
-        ? 'SET #status = :status, adminNotes = :notes'
-        : 'SET #status = :status';
-      adminClient
-        .send(new UpdateCommand({
-          TableName: ORDERS_TABLE,
-          Key: { id: orderId },
-          UpdateExpression: expr,
-          ExpressionAttributeNames: { '#status': 'status' },
-          ExpressionAttributeValues: values,
-        }))
-        .catch(err => console.error('Failed to update order status in DynamoDB.', err));
-    }
   };
 
   // Looks up an order by exact order number (e.g. "JRO-84920") or exact
@@ -598,33 +605,39 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string): Promise<void> => {
+    if (adminClient) {
+      try {
+        await adminClient.send(new DeleteCommand({ TableName: PRODUCTS_TABLE, Key: { id } }));
+      } catch (err) {
+        console.error('Failed to delete product in DynamoDB.', err);
+        throw new Error('Could not delete this product. Please check your connection and try again.');
+      }
+    }
+
     setProducts(prev => prev.filter(p => p.id !== id));
     if (selectedProduct?.id === id) {
       setSelectedProduct(null);
       setActiveView('shop');
     }
-
-    if (adminClient) {
-      adminClient
-        .send(new DeleteCommand({ TableName: PRODUCTS_TABLE, Key: { id } }))
-        .catch(err => console.error('Failed to delete product in DynamoDB.', err));
-    }
   };
 
-  const updateStock = (id: string, stock: number) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock } : p));
-
+  const updateStock = async (id: string, stock: number): Promise<void> => {
     if (adminClient) {
-      adminClient
-        .send(new UpdateCommand({
+      try {
+        await adminClient.send(new UpdateCommand({
           TableName: PRODUCTS_TABLE,
           Key: { id },
           UpdateExpression: 'SET stock = :stock',
           ExpressionAttributeValues: { ':stock': stock },
-        }))
-        .catch(err => console.error('Failed to update stock in DynamoDB.', err));
+        }));
+      } catch (err) {
+        console.error('Failed to update stock in DynamoDB.', err);
+        throw new Error('Could not update stock for this product. Please check your connection and try again.');
+      }
     }
+
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock } : p));
   };
 
   // Re-seeds the Products table from the bundled demo catalogue. Does NOT

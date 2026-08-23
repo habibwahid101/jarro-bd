@@ -66,9 +66,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 <RotateCcw className="w-4 h-4" />
                 <span>Reload Page</span>
               </button>
-              {/* TODO: replace with JARRO's real WhatsApp number (currently a placeholder). */}
               <a
-                href="https://wa.me/8801000000000?text=Hello%2C%20I%20ran%20into%20an%20error%20on%20the%20JARRO%20website."
+                href="https://wa.me/8801823885515?text=Hello%2C%20I%20ran%20into%20an%20error%20on%20the%20JARRO%20website."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 border border-[#EFC9CE] hover:bg-[#FBE8E4] text-[#241A1E] text-xs font-bold uppercase tracking-[0.2em] rounded-lg flex items-center justify-center gap-2 cursor-pointer transition"

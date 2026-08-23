@@ -106,10 +106,9 @@ export const MobileMenuDrawer: React.FC = () => {
       </div>
 
       {/* Mobile Footer info */}
-      {/* TODO: replace with JARRO's real WhatsApp number (currently a placeholder). */}
       <div className="pt-8 border-t border-[#F0D9DC] mt-6 text-xs text-[#8C6A72]">
         <p className="font-serif text-sm font-semibold text-[#241A1E] mb-1">JARRO BANGLADESH</p>
-        <p>WhatsApp Us: +880 1XXX-XXXXXX</p>
+        <p>WhatsApp Us: +880 1823-885515</p>
         <p className="text-[11px] text-[#C79AA3] mt-2">Dhaka · Cash on Delivery Nationwide</p>
       </div>
     </div>

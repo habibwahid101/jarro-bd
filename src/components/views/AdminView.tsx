@@ -68,6 +68,19 @@ export const AdminView: React.FC = () => {
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [productFormError, setProductFormError] = useState('');
 
+  // Surfaces failures from the inline table actions below (order status,
+  // stock edits, delete) that used to fail silently in the console —
+  // shown as a small dismissable banner under the admin header.
+  const [actionError, setActionError] = useState('');
+  const runAdminAction = async (action: () => Promise<void>, fallbackMessage: string) => {
+    setActionError('');
+    try {
+      await action();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : fallbackMessage);
+    }
+  };
+
   // Dashboard calculations
   const totalRevenue = orders
     .filter(o => o.status !== 'Cancelled')
@@ -229,6 +242,25 @@ export const AdminView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Inline Action Error Banner */}
+      {actionError && (
+        <div className="bg-rose-50 border-b border-rose-200 px-4 sm:px-8 py-2.5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-rose-700">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{actionError}</span>
+            </div>
+            <button
+              onClick={() => setActionError('')}
+              className="text-rose-700 hover:text-rose-900 cursor-pointer shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Admin Subnav */}
       <div className="bg-white border-b border-[#F0D9DC] sticky top-0 z-30 shadow-xs">
@@ -491,7 +523,13 @@ export const AdminView: React.FC = () => {
                           <div className="space-y-2">
                             <select
                               value={order.status}
-                              onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
+                              onChange={(e) => {
+                                const nextStatus = e.target.value as OrderStatus;
+                                runAdminAction(
+                                  () => updateOrderStatus(order.id, nextStatus),
+                                  'Could not update this order. Please try again.'
+                                );
+                              }}
                               className="text-xs p-1.5 rounded border border-[#EFC9CE] bg-white font-semibold text-[#241A1E] focus:outline-none focus:border-[#241A1E] cursor-pointer"
                             >
                               <option value="New">🟡 New</option>
@@ -624,7 +662,13 @@ export const AdminView: React.FC = () => {
                               type="number"
                               min={0}
                               value={product.stock}
-                              onChange={(e) => updateStock(product.id, Number(e.target.value))}
+                              onChange={(e) => {
+                                const nextStock = Number(e.target.value);
+                                runAdminAction(
+                                  () => updateStock(product.id, nextStock),
+                                  'Could not update stock for this product. Please try again.'
+                                );
+                              }}
                               className="w-16 p-1 text-center rounded border border-[#EFC9CE] text-xs font-bold"
                             />
                             {product.stock <= 5 && (
@@ -652,7 +696,10 @@ export const AdminView: React.FC = () => {
                             <button
                               onClick={() => {
                                 if (window.confirm(`Delete "${product.name}"?`)) {
-                                  deleteProduct(product.id);
+                                  runAdminAction(
+                                    () => deleteProduct(product.id),
+                                    'Could not delete this product. Please try again.'
+                                  );
                                 }
                               }}
                               className="p-1.5 text-[#B98C93] hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
@@ -811,9 +858,19 @@ export const AdminView: React.FC = () => {
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
-                  onClick={() => {
-                    updateOrderStatus(selectedOrderForModal.id, selectedOrderForModal.status, editingAdminNote);
-                    setSelectedOrderForModal(null);
+                  onClick={async () => {
+                    setActionError('');
+                    try {
+                      await updateOrderStatus(selectedOrderForModal.id, selectedOrderForModal.status, editingAdminNote);
+                      // Only close the modal once the save is confirmed — otherwise a
+                      // failed save would look identical to a successful one and the
+                      // dispatch notes would silently be lost.
+                      setSelectedOrderForModal(null);
+                    } catch (err) {
+                      setActionError(
+                        err instanceof Error ? err.message : 'Could not save dispatch notes. Please try again.'
+                      );
+                    }
                   }}
                   className="px-6 py-2.5 bg-[#241A1E] hover:bg-[#3D2830] text-white text-xs font-bold uppercase tracking-wider rounded transition cursor-pointer"
                 >

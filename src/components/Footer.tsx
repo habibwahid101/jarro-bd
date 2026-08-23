@@ -92,7 +92,6 @@ export const Footer: React.FC = () => {
               Real fits, real you. A Dhaka-based women's clothing label — kurtis, 3-piece sets, co-ords, ponchos and bangles, priced for everyday wear.
             </p>
 
-            {/* TODO: swap the placeholders below for JARRO's real address, WhatsApp number, and email. */}
             <div className="pt-2 space-y-2 text-xs text-[#EFC9CE]">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#C2607D]" />
@@ -100,7 +99,7 @@ export const Footer: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-[#C2607D]" />
-                <span>+880 1XXX-XXXXXX (WhatsApp & Phone)</span>
+                <span>+880 1823-885515 (WhatsApp & Phone)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#C2607D]" />
@@ -196,9 +195,8 @@ export const Footer: React.FC = () => {
             <p className="text-xs text-[#C79AA3] mb-4 leading-relaxed">
               Need help placing an order or picking a size? Message us directly on WhatsApp.
             </p>
-            {/* TODO: replace with JARRO's real WhatsApp number (currently a placeholder). */}
             <a
-              href="https://wa.me/8801000000000?text=Hello%20JARRO%2C%20I%20would%20like%20to%20inquire%20about%20a%20product."
+              href="https://wa.me/8801823885515?text=Hello%20JARRO%2C%20I%20would%20like%20to%20inquire%20about%20a%20product."
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-[#25D366]/30 transition"

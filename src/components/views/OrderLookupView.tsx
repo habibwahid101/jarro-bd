@@ -226,9 +226,8 @@ export const OrderLookupView: React.FC = () => {
             {/* Concierge Help Action */}
             <div className="p-4 bg-white border-t border-[#F0D9DC] flex justify-between items-center text-xs">
               <span className="text-[#8C6A72]">Need adjustments or delivery rescheduling?</span>
-              {/* TODO: replace with JARRO's real WhatsApp number (currently a placeholder). */}
               <a
-                href={`https://wa.me/8801000000000?text=Inquiry%20regarding%20order%20${foundOrder.orderNumber}`}
+                href={`https://wa.me/8801823885515?text=Inquiry%20regarding%20order%20${foundOrder.orderNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#1b8a43] font-semibold hover:underline flex items-center gap-1"

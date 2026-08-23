@@ -99,8 +99,7 @@ const MainLayout: React.FC = () => {
         >
           <a
             id="whatsapp-concierge-float"
-            // TODO: replace with JARRO's real WhatsApp number (currently a placeholder).
-            href="https://wa.me/8801000000000?text=Hello%20JARRO%2C%20I%20would%20like%20assistance%20with%20an%20order."
+            href="https://wa.me/8801823885515?text=Hello%20JARRO%2C%20I%20would%20like%20assistance%20with%20an%20order."
             target="_blank"
             rel="noopener noreferrer"
             className="group flex items-center gap-2.5 bg-[#25D366] hover:bg-[#1fb857] text-white p-3.5 sm:px-4 sm:py-3 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
