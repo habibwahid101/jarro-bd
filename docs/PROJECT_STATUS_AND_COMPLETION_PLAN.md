@@ -1,142 +1,165 @@
-# Project Status & Completion Plan — Valent & Co.
+# Project Status & Completion Plan — JARRO
 
-Last audited: 2026-08-21
-Audited against: local repository at commit history through `Audit fixes: docs, CI, dependency cleanup, order-write hardening` (parent `Wire storefront to AWS...`, parent `Initial Valent & Co. MVP`), plus live inspection of the AWS account (Cognito, DynamoDB, Amplify) via the AWS CLI/boto3.
+Last audited: 2026-08-23
+Audited against: this repo at commit `0cdd9c9` ("Add WhatsApp contact,
+favicon/SEO, admin error handling"), plus live inspection of the AWS account
+(Amplify, Cognito, DynamoDB, S3, IAM) via the AWS MCP connector (boto3).
+
+> The previous version of this document was a leftover from the original
+> **Valent & Co.** audit (different repo, different Amplify app, different
+> Cognito pool) and never actually applied to JARRO after the rebrand. This
+> version replaces it with an audit of the real JARRO resources.
 
 ## 1. Executive Summary
 
-- **Completion percentage:** ~75% of a deployable MVP. Application code and AWS backend are complete and verified working end-to-end in code; the remaining gap is entirely in release wiring (GitHub push, Amplify↔GitHub connection) plus test/CI coverage that didn't exist before this audit.
-- **Product readiness:** Core shopper journeys (browse, cart, checkout, order lookup) and the admin journey (login, product CRUD, order status) are implemented and type-safe. Not yet live on a public URL.
-- **Engineering readiness:** Build and typecheck pass clean. No automated test suite exists (unit or E2E) — **NOT VERIFIED** beyond manual/code review.
-- **QA readiness:** No automated QA. Manual code-path review only (see §8). No device/browser testing was performed (this audit has no browser to test against a live URL, since none is deployed yet).
-- **UI/UX readiness:** Responsive Tailwind layout with loading/empty/error states present on the checkout and order-lookup flows (see §7); not verified visually at each breakpoint since there is no live deployment to screenshot.
-- **Security readiness:** Good — IAM least privilege for the guest/admin split is correctly enforced server-side (verified directly against the live IAM policies, not just inferred from code). One real gap found and fixed in this audit (order overwrite/tamper risk, §9).
-- **Deployment readiness:** Backend infrastructure is fully provisioned and seeded. Two manual steps remain, both requiring the account owner: push the local commits to GitHub, and connect Amplify Hosting to the GitHub repo.
+- **Completion percentage:** ~90% of a deployable, feature-complete MVP.
+  Application code, AWS backend, and hosting are all live and verified
+  working end-to-end. The image upload feature shipped this session still
+  needs a `git push` from the account owner to reach production (see §5).
+- **Deployment readiness — the big finding this audit:** the Amplify app
+  actually connected to this GitHub repo (`jarro-bd`, `d2u0llr91rm89j`) had
+  **zero environment variables configured**, despite deploying successfully
+  on every push. This meant the live site was silently running in
+  demo-data-only mode: browsing worked, but checkout, admin login, and order
+  lookup were all broken in production. **Fixed this audit** — env vars set,
+  app redeployed (job 6, SUCCEED), live site now backed by the real
+  DynamoDB/Cognito resources. See §5 for how this happened.
+- **A second, unconnected Amplify app** (confusingly also named "JARRO",
+  `d3diavwr0aozws`) existed with the *correct* env vars but no GitHub
+  connection and no deployment — an orphaned duplicate from earlier setup.
+  **Deleted this audit** to remove the confusion.
+- **Product readiness:** Core shopper journeys (browse, cart, checkout,
+  order lookup) and the admin journey (login, product CRUD, order status,
+  now real product-image upload) are implemented and type-safe.
+- **Security readiness:** Good — IAM least privilege for the guest/admin
+  split verified live. New S3 write permission for JARRO-AdminRole is
+  correctly scoped to the `products/` prefix only, and to `PutObject`/
+  `DeleteObject` (no `GetObject`/`ListBucket` needed, since the bucket
+  policy already makes `products/*` publicly readable).
+- **Engineering readiness:** Build, typecheck, and the existing unit test
+  suite (7 tests) all pass with the new image-upload code included.
 
-## 2. Confirmed Completed
+## 2. This Session's Changes
 
-- **Storefront UI** — home, shop/catalogue, product detail, cart, wishlist, checkout, order success, order lookup, admin views all implemented (`src/components/views/*`).
-- **Cart & wishlist** — client-side, `localStorage`-backed, verified in `ShopContext.tsx`.
-- **DynamoDB-backed products** — `ValentCo-Products` table exists, seeded with 15 items (verified via live `Scan --select COUNT`).
-- **DynamoDB-backed orders** — `ValentCo-Orders` table exists, seeded with 3 demo orders, with `orderNumber-index` and `customerMobile-index` GSIs (verified via live `DescribeTable`).
-- **Cognito admin authentication** — User Pool `us-east-1_QhR756GXv`, app client `valent-co-web` with no client secret, `USER_PASSWORD_AUTH`/SRP enabled, no OAuth flows exposed (verified via live `DescribeUserPoolClient`). `src/lib/adminAuth.ts` + `src/components/AdminGate.tsx` implement sign-in/sign-out/session persistence.
-- **IAM least privilege** — verified live: `ValentCo-GuestRole` = read Products + PutItem/Query on Orders only (no Scan, no Update/Delete); `ValentCo-AdminRole` = full CRUD on both tables. Trust policies correctly scoped to the Identity Pool via `cognito-identity.amazonaws.com:aud`/`amr` conditions.
-- **Build & typecheck** — `npm run build` and `tsc --noEmit` both pass with zero errors (verified by running them in this audit).
-- **No secrets committed** — `.env` is gitignored (`!.env.example` is the only tracked env file); grep found no hardcoded keys/passwords in `src/`.
+### AWS backend
+- Set the missing environment variables on the live Amplify app `jarro-bd`
+  (`d2u0llr91rm89j`): `VITE_AWS_REGION`, `VITE_IDENTITY_POOL_ID`,
+  `VITE_COGNITO_USER_POOL_ID`, `VITE_COGNITO_CLIENT_ID`,
+  `VITE_DDB_PRODUCTS_TABLE`, `VITE_DDB_ORDERS_TABLE`, and the new
+  `VITE_S3_PRODUCT_IMAGES_BUCKET`.
+- Triggered a manual redeploy (job 6) so the new env vars actually took
+  effect (Vite bakes them in at build time — changing them in the console
+  alone does nothing until the next build). Confirmed `SUCCEED` on
+  `BUILD`/`DEPLOY`/`VERIFY`.
+- Deleted the orphaned, never-deployed Amplify app `JARRO` (`d3diavwr0aozws`).
+- Created S3 bucket `jarro-bd-product-images`:
+  - Public-access-block: ACL-based public access blocked; bucket-policy
+    public access allowed (modern S3 best practice over public ACLs).
+  - Bucket policy: anonymous `s3:GetObject` on `products/*` only.
+  - CORS: `GET`/`PUT`/`HEAD` allowed from any origin (write access is still
+    gated by IAM/Cognito credentials, not CORS — CORS only governs whether a
+    browser *can attempt* the request).
+- Added inline IAM policy `JARRO-AdminS3ProductImages` to `JARRO-AdminRole`:
+  `s3:PutObject` + `s3:DeleteObject` on `arn:aws:s3:::jarro-bd-product-images/products/*`.
 
-## 3. Partially Completed
+### Application code
+- `src/lib/s3.ts` (new) — S3 client using the same Cognito Identity Pool
+  credential pattern as `src/lib/aws.ts`, always with an admin idToken.
+  `uploadProductImage()` validates file type/size client-side, uploads to a
+  UUID-named key under `products/`, returns the public URL.
+  `deleteProductImage()` best-effort deletes, no-oping for any URL that
+  isn't from this bucket.
+- `src/context/ShopContext.tsx` — exposes `uploadProductImage` and
+  `imageUploadConfigured` through the existing admin-action pattern (same
+  shape as `addProduct`/`updateProduct`/etc.); `deleteProduct` now
+  best-effort cleans up the deleted product's S3 images.
+- `src/components/views/AdminView.tsx` — the "Add/Edit Product" form's
+  single "Image URL" text field is replaced with a real upload widget:
+  drag-a-file-picker upload (multiple files, parallel upload, per-file
+  progress), a thumbnail grid with per-image remove, and a "paste a URL"
+  fallback for external images. Product data already supported an
+  `images: string[]` array and `ProductDetailView` already renders a
+  multi-image gallery (`activeImageIndex`) — the admin form just wasn't
+  using that capacity before this change.
+- `package.json` — added `@aws-sdk/client-s3`.
+- `README.md` / `.env.example` — updated to reflect the real, live
+  infrastructure (previously described Amplify as "not yet set up," which
+  was stale even before this audit — the app existed and was deploying,
+  just misconfigured).
 
-- **Order lookup / async UX** — `findOrder` is async and awaited correctly with a submit spinner (`OrderLookupView.tsx`), but there's no distinct "no results" vs "error" messaging — both render the same empty state.
-- **Admin product form** — CRUD actions exist and write to DynamoDB, but client-side validation on the admin product form was not audited line-by-line in this pass (out of scope for this round; flagged for the next backlog pass if the admin form is used heavily).
-- **CI** — added in this audit (`.github/workflows/ci.yml`: install, typecheck, build on every push/PR to `main`). Not yet exercised on GitHub because the repo isn't pushed yet.
+## 3. Confirmed Working (verified live, this audit)
 
-## 4. Missing
+- **DynamoDB** — `JARRO-Products` (10 items, ACTIVE), `JARRO-Orders` (0
+  items, ACTIVE, both GSIs ACTIVE).
+- **Cognito** — User Pool `JARRO-AdminPool` (`us-east-1_4MANSDm5m`), app
+  client `jarro-web`, no secret, `USER_PASSWORD_AUTH` enabled. Identity Pool
+  `JarroIdentityPool` correctly maps unauthenticated → `JARRO-GuestRole`,
+  authenticated → `JARRO-AdminRole`.
+- **IAM least privilege** — `JARRO-GuestRole`: read Products, create +
+  query-own Orders only (no Scan on Orders, no Update/Delete anywhere).
+  `JARRO-AdminRole`: full CRUD on both tables + scoped S3 write (new).
+- **Amplify** — `jarro-bd` app connected to `github.com/habibwahid101/jarro-bd`,
+  `main` branch, auto-build on push, env vars now correctly set, last
+  deploy `SUCCEED`.
+- **Build & typecheck** — `npm run build` and `npm run typecheck` pass with
+  zero errors, including the new S3/upload code.
+- **Unit tests** — existing 7-test suite (`ShopContext.test.tsx`) passes
+  unchanged.
 
-- **Automated tests** — no unit tests, no integration tests, no E2E tests exist anywhere in the repo. **NOT VERIFIED** is the correct status for all "tests pass" claims until a suite is added.
-- **ESLint** — the `lint` script is actually just `tsc --noEmit` (typecheck only); there's no ESLint config, so no style/quality linting runs.
-- **Error boundary** — no top-level React error boundary; an unexpected render error would show a blank white screen instead of a graceful fallback.
-- **Rate limiting / abuse protection** — none, at the DynamoDB or Cognito layer. Acceptable for current MVP scale; flagged for later if traffic grows (see §9).
+## 4. Outstanding — Owner Action Required
 
-## 5. Broken / Defective
+1. **`git push` the changes from this session.** This cloud session has no
+   GitHub push credentials and (for security) Amplify refuses manual/zip
+   deploys for a GitHub-connected app (`BadRequestException: Operation not
+   supported. App is already connected a repository` — confirmed live,
+   this audit), so the image-upload feature's code can't reach production
+   without a real push from the repo owner. The changed/added files are
+   already written to your local working copy:
+   - `src/lib/s3.ts` (new)
+   - `src/context/ShopContext.tsx`
+   - `src/components/views/AdminView.tsx`
+   - `package.json` / `package-lock.json`
+   - `README.md`, `.env.example`, this file
+   Review, then:
+   ```
+   git add -A
+   git commit -m "Add real S3-backed product image upload for admin panel"
+   git push
+   ```
+   Amplify's webhook will pick this up automatically and redeploy.
+2. **Change the default admin password** after first login, if not already
+   done — still no in-app change-password flow (see README → Admin access).
+3. Consider whether the wildcard CORS origin (`*`) on the product-images
+   bucket should be narrowed to the production domain(s) once a custom
+   domain is attached to the Amplify app — functionally fine as-is (write
+   access is enforced by IAM, not CORS) but tighter is tidier.
 
-- **GitHub push outstanding** — local `main` is 1 commit ahead of `origin/main` before this session's fixes (now 2, after this audit's commit). This is a release blocker, not a code defect — requires the account owner to run `git push` from their machine (I have no `device_bash`/shell access on the user's PC, only file read/write).
-- **Amplify not yet connected to GitHub** — `GetApp` on `d11od1b3r797fb` returns no `repository` field; the `main` branch record exists in Amplify but has never run a build (`activeJobId` absent). Requires the account owner to complete GitHub OAuth authorization in the AWS Console — this can't be done on their behalf (see refusal rules for OAuth grants).
-- **Stale README / `.env.example`** — before this audit both still referenced the original AI Studio/Gemini scaffold (`GEMINI_API_KEY`, `APP_URL`) with no mention of the actual AWS variables the app requires. **Fixed in this audit.**
-- **Unused dependencies** — `express`, `@types/express`, `dotenv`, `tsx`, `@google/genai` were present in `package.json` but referenced nowhere in `src/` (verified by grep) — leftover from the original scaffold, adding install weight and confusion with no function. **Fixed in this audit** (removed; reinstall verified 0 vulnerabilities, build still passes).
+## 5. How the Env-Var Gap Happened (for reference)
 
-## 6. Technical Debt
+Three Amplify apps existed in the account by the time this audit started:
+`Valent-Co` (the original, unrelated project — left alone), `jarro-bd`
+(connected to the correct repo, receiving real deploys, but created without
+environment variables — likely created via `amplify init`/console "connect
+repo" flow that doesn't prompt for env vars), and an orphaned `JARRO` app
+(created separately, correctly configured, but never connected to GitHub —
+likely an earlier, abandoned attempt at the same setup). The working
+hypothesis is that backend provisioning (DynamoDB/Cognito/IAM) and Amplify
+Hosting setup happened in two disconnected passes that never got reconciled
+against each other, and nothing surfaced the mismatch because Amplify builds
+succeed regardless of whether `import.meta.env.VITE_*` resolves to a real
+value or `undefined` at build time — the app just silently falls back to
+demo-data mode instead of failing the build.
 
-- **Main JS bundle is 620 KB minified** (168 KB gzipped) — Vite's build warns on this. The AWS SDK v3 clients are the largest contributor. Not urgent at current traffic; a worthwhile future improvement is dynamic `import()` of `src/lib/aws.ts` so the SDK isn't in the initial bundle for pure browsing sessions.
+## 6. Technical Debt (carried over, not addressed this audit)
+
+- **Main JS bundle is ~600 KB minified** (~178 KB gzipped) — Vite's build
+  warns on this. The AWS SDK v3 clients (now three: DynamoDB, Cognito, S3)
+  are the largest contributor. Dynamic `import()` of the AWS libs would keep
+  them out of the initial bundle for pure browsing sessions.
 - **No code-splitting by route** — all views ship in one bundle.
-- **`id` generation uses `Date.now()`** for both orders (`ord-${Date.now()}`) and products (`prod-${Date.now()}`) — low collision risk at current scale, but not collision-proof under concurrent writes. A UUID would be more robust if traffic grows.
-
-## 7. UI/UX Findings
-
-Audited by code review (no live deployment exists yet to test in-browser, so this is static review, not a rendered/interactive audit):
-
-- Checkout form (`CheckoutView.tsx`) has real client-side validation (name, 11-digit mobile, address required) with an inline error banner, a disabled+spinner submit state, and an empty-cart guard state. This is solid.
-- Order lookup (`OrderLookupView.tsx`) has a loading state (`isSearching`) but the "not found" and "network error" cases are not visually distinguished — worth a small follow-up.
-- Admin views were not re-audited pixel-by-pixel in this pass; `AdminGate.tsx` correctly blocks the admin view behind sign-in with no bypass path in `App.tsx` (confirmed: `admin` view is always wrapped in `<AdminGate>`).
-- Responsive breakpoints (320/375/390/430/tablet/desktop) were **NOT VERIFIED** — this requires a live URL and a browser, neither of which exists yet. This should be the first QA pass once Amplify Hosting goes live.
-
-## 8. QA Findings
-
-No automated QA exists. Manual code-path review found no P0/P1 defects in the reviewed flows (checkout, order lookup, admin gate, cart). Full QA matrix execution (signup/login, CRUD, refresh/session handling, mobile/tablet/desktop) is **NOT VERIFIED** — blocked on having a live deployment to test against.
-
-## 9. Security Findings
-
-| Finding | Severity | Status |
-|---|---|---|
-| Guest role could overwrite an existing order by resubmitting its `id`, since `PutItem` was unconditional and the guest IAM role has `PutItem` but not `UpdateItem`/`DeleteItem` — a way around the intended "guests can only create, never modify" boundary. | Medium | **Fixed** — added `ConditionExpression: 'attribute_not_exists(id)'` to the order `PutCommand` in `ShopContext.tsx`. |
-| Order total/pricing is client-computed and trusted as-is by DynamoDB (no server-side recalculation). | Low (business risk, not data risk) | **Deferred, documented.** Business model is Cash-on-Delivery with phone confirmation before dispatch (per existing code comments), so a tampered total would be caught before money changes hands. A hardened version would need a Lambda/API layer to recompute totals server-side — an architecture change beyond this audit's scope, flagged for a future phase if the business ever accepts online prepayment. |
-| IAM least privilege for guest vs. admin roles. | — | **Verified good**, no action needed — confirmed live against the actual attached policies, not just inferred from application code. |
-| Cognito app client has no secret and no OAuth flows enabled. | — | **Verified good**, appropriate for a public SPA. |
-| No secrets committed to Git. | — | **Verified good** — `.env*` gitignored except `.env.example`; no hardcoded credentials found in `src/`. |
-| No rate limiting on order creation (a script could spam `PutItem` calls with valid guest credentials, since those credentials are necessarily public in a browser SPA). | Low | **Deferred.** Acceptable at current scale; if abuse becomes a problem, add AWS WAF in front of Amplify Hosting or a request-throttling Lambda. |
-
-## 10. Performance Findings
-
-- Production build succeeds; main bundle 620 KB minified / 169 KB gzipped, above Vite's 500 KB warning threshold. Not blocking for MVP traffic levels; flagged as technical debt (§6).
-- No N+1 query patterns found — all DynamoDB access is direct `Scan`/`Query`/`GetItem`/`PutItem` against known table/index names, no per-row follow-up calls.
-
-## 11. DevOps / Deployment Findings
-
-- **Build:** PASS (verified, this audit)
-- **Typecheck:** PASS (verified, this audit)
-- **Lint (ESLint):** NOT AVAILABLE — no ESLint config exists
-- **Unit tests:** NOT AVAILABLE — none exist
-- **E2E tests:** NOT AVAILABLE — none exist
-- **CI:** Added this audit (`.github/workflows/ci.yml`); not yet exercised (repo not pushed)
-- **DynamoDB tables + GSIs:** PASS (verified live)
-- **Cognito User/Identity Pools + IAM roles:** PASS (verified live)
-- **Amplify Hosting app + env vars:** PASS, app exists with correct env vars set (verified live); **NOT connected to GitHub yet** — owner action required
-- **git push to GitHub:** NOT DONE — owner action required (needs the user's own GitHub credentials; not something this session can perform on their behalf)
-
-## 12. Owner Decisions Required
-
-1. **Push to GitHub** — run `git push` from `C:\Users\HP\Development\Valent-Co` (the correct, flat top-level folder). Requires the user's own GitHub sign-in/credentials.
-2. **Connect Amplify to GitHub** — in the AWS Console, Amplify Hosting → app `Valent-Co` → connect branch `main` to `habibwahid101/Valent-Co.`. This is an interactive GitHub OAuth grant that only the account owner can authorize.
-3. **Change the default admin password** after first login (was set during initial provisioning).
-4. **Delete the leftover nested `Valent-Co\Valent-Co\` folder** on the user's PC (old extraction artifact) — no functional impact on the repo itself, just local clutter; requires manual deletion since this session has no delete capability on the user's device.
-5. **Vercel deployment** (`valent-co.vercel.app`) — user stated it was deleted; last independent check from this session found it still serving the live site. Needs the user to re-check their Vercel dashboard directly, since this session has no access to their Vercel account.
-
-## 13. Prioritized Completion Backlog
-
-| ID | Task | Priority | Owner Role | Dependency | Risk | Status |
-|---|---|---|---|---|---|---|
-| 1 | Fix stale README/.env.example (AI Studio leftovers) | P2 | Docs | — | Low | **Done** |
-| 2 | Remove unused deps (express, dotenv, tsx, @google/genai, @types/express) | P2 | Eng | — | Low | **Done** |
-| 3 | Harden order writes against overwrite (ConditionExpression) | P1 | Security | — | Low | **Done** |
-| 4 | Add CI (typecheck + build on push/PR) | P2 | DevOps | — | Low | **Done** |
-| 5 | Push local commits to GitHub | P0 | Owner | GitHub credentials | Low | **Blocked — owner action** |
-| 6 | Connect Amplify Hosting to GitHub `main` | P0 | Owner | Task 5 | Low | **Blocked — owner action** |
-| 7 | First live QA pass (responsive breakpoints, real browser) | P1 | QA | Task 6 | Low | Not started |
-| 8 | Add unit tests for `ShopContext` order/product logic | P2 | QA/Eng | — | Low | Not started |
-| 9 | Add ESLint config | P3 | Eng | — | Low | Not started |
-| 10 | Add top-level React error boundary | P3 | Eng | — | Low | Not started |
-| 11 | Code-split AWS SDK / reduce main bundle size | P3 | Perf | — | Low | Not started |
-| 12 | Distinguish "not found" vs "error" state in order lookup | P4 | UI/UX | — | Low | Not started |
-| 13 | Change default admin password | P1 | Owner | — | Low | Not started |
-
-## 14. Recommended Execution Sequence
-
-1. Owner pushes to GitHub (Task 5) — unblocks everything downstream.
-2. Owner connects Amplify to GitHub (Task 6) — first live deployment.
-3. Live QA pass against the real URL (Task 7) — this is where responsive/UI/UX findings become concrete instead of NOT VERIFIED.
-4. Change default admin password (Task 13).
-5. Backlog items 8–12 as ongoing hardening/polish, no urgency.
-
-## 15. Definition of Done
-
-- [x] Production build succeeds
-- [x] Typecheck succeeds
-- [ ] Automated tests exist and pass — **not yet built**
-- [x] No unresolved P0/P1 bugs in reviewed code paths (P1 order-overwrite issue found and fixed this audit)
-- [x] Primary user journeys implemented end-to-end in code
-- [x] Persistence verified (DynamoDB tables live, seeded, correct item counts)
-- [x] Authentication/authorization verified (Cognito + IAM roles live and correctly scoped)
-- [ ] Live deployment reachable at a public URL — **blocked on Tasks 5–6**
-- [ ] Responsive QA across breakpoints — **blocked on live URL**
-- [x] No exposed secrets
-- [x] Environment variables documented (README + .env.example)
-- [ ] Rollback procedure documented — not yet written (Amplify Hosting supports one-click rollback to a previous build once connected; document after first deploy)
+- **`id` generation uses `Date.now()`** for orders/products — low collision
+  risk at current scale, a UUID would be more robust under concurrent
+  writes.
+- **Order total is client-computed**, trusted as-is by DynamoDB (documented,
+  accepted risk for a Cash-on-Delivery business model — see the original
+  Valent & Co. audit for the full reasoning, still applicable).

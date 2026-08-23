@@ -5,16 +5,13 @@ Bangladesh-based women's clothing brand (kurtis, 3-piece sets, co-ords,
 ponchos, and bangles — see facebook.com/Jarrobd). This is a rebrand/clone of
 the Valent & Co. codebase, retargeted at JARRO's product line. Product
 catalogue and orders are backed by AWS DynamoDB; admin login is backed by AWS
-Cognito. Cart and wishlist are kept client-side (per-visitor, in
-`localStorage`).
+Cognito; admin-uploaded product photos are backed by AWS S3. Cart and
+wishlist are kept client-side (per-visitor, in `localStorage`).
 
-> **Backend status:** JARRO now has its own AWS resources, fully separate
-> from Valent & Co.'s — see [Infrastructure](#infrastructure) below. `.env`
-> on this machine is already pointed at them (not committed to git — see
-> `.gitignore`). The Products table has been seeded with the 10 sample items
-> from `mockData.ts`; the Orders table starts empty. Amplify Hosting has not
-> been set up yet — this is currently backend-only (DynamoDB + Cognito),
-> deploy separately whenever you're ready.
+> **Status:** Live on AWS Amplify Hosting at
+> `https://main.d2u0llr91rm89j.amplifyapp.com`, connected to this repo's
+> `main` branch (auto-builds on every push). Backend (DynamoDB, Cognito, S3)
+> is fully provisioned and verified live — see [Infrastructure](#infrastructure).
 
 ## Stack
 
@@ -22,7 +19,8 @@ Cognito. Cart and wishlist are kept client-side (per-visitor, in
 - Tailwind CSS v4
 - AWS DynamoDB (products + orders), via the AWS SDK v3 (`@aws-sdk/lib-dynamodb`)
 - AWS Cognito User Pool (admin auth) + Identity Pool (temporary, scoped IAM credentials)
-- AWS Amplify Hosting (build + deploy) — not yet set up for JARRO, see [Infrastructure](#infrastructure)
+- AWS S3 (admin-uploaded product photos), via `@aws-sdk/client-s3`
+- AWS Amplify Hosting (build + deploy) — connected to GitHub, auto-builds on push to `main`
 
 ## Prerequisites
 
@@ -43,25 +41,42 @@ Cognito. Cart and wishlist are kept client-side (per-visitor, in
    ```
 
 Without a valid `.env`, the app still runs using bundled demo product data
-(read-only) — useful for UI-only work, but cart checkout, admin login, and
-order lookup all require a real AWS backend.
+(read-only) — useful for UI-only work, but cart checkout, admin login, order
+lookup, and product image upload all require a real AWS backend.
 
 ## Environment variables
 
 All variables are consumed at build time via `import.meta.env` (Vite), so
 they must be set both locally (`.env`) and in the hosting environment
-(Amplify Hosting → App settings → Environment variables).
+(Amplify Hosting → App settings → Environment variables). **Any change to
+these in the Amplify console only takes effect on the next build/redeploy**
+— Amplify does not hot-reload a running deployment when you edit them.
 
 | Variable | Description |
 |---|---|
-| `VITE_AWS_REGION` | AWS region the backend resources live in (e.g. `us-east-1`) |
+| `VITE_AWS_REGION` | AWS region the backend resources live in (`us-east-1`) |
 | `VITE_IDENTITY_POOL_ID` | Cognito Identity Pool ID — issues scoped guest/admin IAM credentials |
 | `VITE_COGNITO_USER_POOL_ID` | Cognito User Pool ID — admin accounts |
 | `VITE_COGNITO_CLIENT_ID` | Cognito User Pool **app client** ID (no client secret) |
 | `VITE_DDB_PRODUCTS_TABLE` | DynamoDB table name for products |
 | `VITE_DDB_ORDERS_TABLE` | DynamoDB table name for orders |
+| `VITE_S3_PRODUCT_IMAGES_BUCKET` | S3 bucket for admin-uploaded product photos |
 
 See `.env.example` for a template.
+
+## Product image uploads (admin)
+
+The admin "Add/Edit Product" form (Products tab) uploads photos directly
+from the browser to S3 using the signed-in admin's temporary Cognito
+credentials — no server or Lambda involved. Multiple photos per product are
+supported (the first is the storefront "cover" image); pasting an existing
+image URL is still available as a fallback. Uploaded files are validated
+client-side (JPEG/PNG/WebP/GIF, max 8 MB) before upload, and deleting a
+product best-effort deletes its uploaded photos from S3 too (pasted external
+URLs and the bundled placeholder are left alone, since those aren't ours to
+delete).
+
+See `src/lib/s3.ts` for the upload/delete implementation.
 
 ## Infrastructure
 
@@ -75,18 +90,26 @@ resources — nothing here is shared with that project:
 - **Cognito Identity Pool** — `JarroIdentityPool` (`us-east-1:fe33ac71-157e-48bd-88f4-d42fe6c282f0`),
   issues two IAM roles via unauthenticated/authenticated federation:
   `JARRO-GuestRole` (read products; create + look up own orders only) and
-  `JARRO-AdminRole` (full read/write on both tables, only assumable with a
-  valid admin ID token)
-- **Amplify Hosting** — not yet provisioned. Deploying JARRO (Amplify, Vercel,
-  or otherwise) is a separate step from the backend above.
+  `JARRO-AdminRole` (full read/write on both DynamoDB tables, plus
+  `s3:PutObject`/`s3:DeleteObject` on the product images bucket's
+  `products/` prefix — only assumable with a valid admin ID token)
+- **S3** — `jarro-bd-product-images`, public read on the `products/` prefix
+  only (bucket policy; ACL-based public access is blocked account-wide),
+  CORS enabled for browser `PUT`/`GET`/`HEAD`
+- **Amplify Hosting** — app `jarro-bd` (`d2u0llr91rm89j`), connected to this
+  GitHub repo's `main` branch, auto-builds on push. A second, unconnected
+  Amplify app (also confusingly named "JARRO") existed briefly during setup
+  and has been deleted — this repo's `jarro-bd` app is the only one that
+  matters.
 
 ## Scripts
 
 - `npm run dev` — start the Vite dev server
 - `npm run build` — production build (`dist/`)
 - `npm run preview` — preview a production build locally
-- `npm run lint` — TypeScript typecheck (`tsc --noEmit`); there is no separate
-  ESLint config in this project yet
+- `npm run typecheck` — TypeScript typecheck (`tsc --noEmit`)
+- `npm run lint` — ESLint
+- `npm run test` — unit tests (Vitest)
 
 ## Admin access
 

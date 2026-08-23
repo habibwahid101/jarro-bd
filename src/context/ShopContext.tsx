@@ -27,6 +27,11 @@ import {
   loadAdminSession,
   AdminSession,
 } from '../lib/adminAuth';
+import {
+  uploadProductImage as uploadProductImageToS3,
+  deleteProductImage as deleteProductImageFromS3,
+  imageUploadIsConfigured,
+} from '../lib/s3';
 
 export type AppView =
   | 'home'
@@ -98,6 +103,10 @@ interface ShopContextType {
   deleteProduct: (id: string) => Promise<void>;
   updateStock: (id: string, stock: number) => Promise<void>;
   resetToDemoData: () => void;
+
+  // Admin product image upload (S3) — requires an active admin session.
+  imageUploadConfigured: boolean;
+  uploadProductImage: (file: File) => Promise<string>;
 
   // Helpers
   formatBDT: (amount: number) => string;
@@ -606,6 +615,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteProduct = async (id: string): Promise<void> => {
+    const toDelete = products.find(p => p.id === id);
+
     if (adminClient) {
       try {
         await adminClient.send(new DeleteCommand({ TableName: PRODUCTS_TABLE, Key: { id } }));
@@ -619,6 +630,17 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (selectedProduct?.id === id) {
       setSelectedProduct(null);
       setActiveView('shop');
+    }
+
+    // Best-effort S3 cleanup, after the DynamoDB delete is confirmed. Never
+    // blocks or fails the product deletion itself — an orphaned image in
+    // the bucket is a minor storage-cost nit, not a data-integrity issue,
+    // and deleteProductImage() already no-ops for any URL that isn't one of
+    // ours (e.g. a manually-pasted external URL or the bundled placeholder).
+    if (adminSession && toDelete) {
+      toDelete.images.forEach(url => {
+        deleteProductImageFromS3(adminSession.idToken, url).catch(() => {});
+      });
     }
   };
 
@@ -638,6 +660,23 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setProducts(prev => prev.map(p => p.id === id ? { ...p, stock } : p));
+  };
+
+  // Uploads a single image file to S3 (products/ prefix) using the current
+  // admin's temporary credentials and returns its public URL. Throws if no
+  // admin is signed in — matches every other admin action in this file,
+  // which all assume adminSession is present (AdminGate enforces this at
+  // the UI layer before any of these can be reached).
+  const uploadProductImage = async (file: File): Promise<string> => {
+    if (!adminSession) {
+      throw new Error('You must be signed in as an admin to upload images.');
+    }
+    try {
+      return await uploadProductImageToS3(adminSession.idToken, file);
+    } catch (err) {
+      console.error('Failed to upload product image to S3.', err);
+      throw err instanceof Error ? err : new Error('Could not upload this image. Please try again.');
+    }
   };
 
   // Re-seeds the Products table from the bundled demo catalogue. Does NOT
@@ -703,6 +742,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteProduct,
         updateStock,
         resetToDemoData,
+        imageUploadConfigured: imageUploadIsConfigured,
+        uploadProductImage,
         formatBDT
       }}
     >

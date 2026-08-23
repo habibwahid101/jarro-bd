@@ -17,26 +17,33 @@ import {
   Check, 
   X, 
   Eye, 
-  Printer, 
+  Printer,
   DollarSign,
-  Filter
+  Filter,
+  Upload,
+  Loader2,
+  ImageOff
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { Product, Order, OrderStatus, ProductCategory, ProductVariant } from '../../types';
 import { CATEGORIES_LIST, BRANDS_LIST } from '../../data/mockData';
 
+const PLACEHOLDER_IMAGE = 'https://placehold.co/800x1000/FBE8E4/241A1E?text=JARRO';
+
 export const AdminView: React.FC = () => {
-  const { 
-    products, 
-    orders, 
-    updateOrderStatus, 
-    addProduct, 
-    updateProduct, 
-    deleteProduct, 
-    updateStock, 
-    resetToDemoData, 
-    navigateTo, 
-    formatBDT 
+  const {
+    products,
+    orders,
+    updateOrderStatus,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    updateStock,
+    resetToDemoData,
+    imageUploadConfigured,
+    uploadProductImage,
+    navigateTo,
+    formatBDT
   } = useShop();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories'>('dashboard');
@@ -62,11 +69,56 @@ export const AdminView: React.FC = () => {
   const [formPrice, setFormPrice] = useState<number>(6500);
   const [formOldPrice, setFormOldPrice] = useState<number>(0);
   const [formStock, setFormStock] = useState<number>(15);
-  const [formImageUrl, setFormImageUrl] = useState('');
+  const [formImages, setFormImages] = useState<string[]>([]);
+  const [formManualImageUrl, setFormManualImageUrl] = useState('');
+  const [uploadingCount, setUploadingCount] = useState(0);
+  const [imageUploadError, setImageUploadError] = useState('');
   const [formIsNew, setFormIsNew] = useState(true);
   const [formIsBestSeller, setFormIsBestSeller] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [productFormError, setProductFormError] = useState('');
+
+  // Uploads every selected file to S3 (in parallel) and appends the
+  // resulting public URLs to the form's image list. Partial failures don't
+  // block the successful uploads — each file's error is collected and
+  // surfaced together so one bad file doesn't silently swallow the rest.
+  const handleImageFilesSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setImageUploadError('');
+    const fileArray = Array.from(files);
+    setUploadingCount(prev => prev + fileArray.length);
+
+    const results = await Promise.allSettled(fileArray.map(file => uploadProductImage(file)));
+
+    const uploaded: string[] = [];
+    const errors: string[] = [];
+    results.forEach(res => {
+      if (res.status === 'fulfilled') {
+        uploaded.push(res.value);
+      } else {
+        errors.push(res.reason instanceof Error ? res.reason.message : 'Upload failed.');
+      }
+    });
+
+    if (uploaded.length > 0) {
+      setFormImages(prev => [...prev, ...uploaded]);
+    }
+    if (errors.length > 0) {
+      setImageUploadError(errors[0]);
+    }
+    setUploadingCount(prev => prev - fileArray.length);
+  };
+
+  const handleAddManualImageUrl = () => {
+    const url = formManualImageUrl.trim();
+    if (!url) return;
+    setFormImages(prev => [...prev, url]);
+    setFormManualImageUrl('');
+  };
+
+  const handleRemoveFormImage = (index: number) => {
+    setFormImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   // Surfaces failures from the inline table actions below (order status,
   // stock edits, delete) that used to fail silently in the console —
@@ -125,7 +177,7 @@ export const AdminView: React.FC = () => {
     setProductFormError('');
     setIsSavingProduct(true);
 
-    const defaultImg = formImageUrl.trim() || 'https://placehold.co/800x1000/FBE8E4/241A1E?text=JARRO';
+    const finalImages = formImages.length > 0 ? formImages : [PLACEHOLDER_IMAGE];
     const slug = formName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const sku = `JR-${formCategory.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -141,7 +193,7 @@ export const AdminView: React.FC = () => {
       price: Number(formPrice),
       oldPrice: formOldPrice > 0 ? Number(formOldPrice) : undefined,
       stock: Number(formStock),
-      images: [defaultImg],
+      images: finalImages,
       variants: [
         {
           id: `v-${Date.now()}-1`,
@@ -177,7 +229,9 @@ export const AdminView: React.FC = () => {
       setFormPrice(6500);
       setFormOldPrice(0);
       setFormStock(15);
-      setFormImageUrl('');
+      setFormImages([]);
+      setFormManualImageUrl('');
+      setImageUploadError('');
     } catch (err) {
       setProductFormError(
         err instanceof Error ? err.message : 'Could not save this product. Please try again.'
@@ -197,7 +251,9 @@ export const AdminView: React.FC = () => {
     setFormPrice(prod.price);
     setFormOldPrice(prod.oldPrice || 0);
     setFormStock(prod.stock);
-    setFormImageUrl(prod.images[0] || '');
+    setFormImages(prod.images || []);
+    setFormManualImageUrl('');
+    setImageUploadError('');
     setFormIsNew(!!prod.isNew);
     setFormIsBestSeller(!!prod.isBestSeller);
     setIsAddProductModalOpen(true);
@@ -603,7 +659,9 @@ export const AdminView: React.FC = () => {
                   setFormPrice(6500);
                   setFormOldPrice(0);
                   setFormStock(15);
-                  setFormImageUrl('');
+                  setFormImages([]);
+                  setFormManualImageUrl('');
+                  setImageUploadError('');
                   setIsAddProductModalOpen(true);
                 }}
                 className="w-full sm:w-auto px-4 py-2.5 bg-[#241A1E] hover:bg-[#3D2830] text-white text-xs font-bold uppercase tracking-wider rounded-lg transition cursor-pointer flex items-center justify-center gap-2"
@@ -1018,15 +1076,110 @@ export const AdminView: React.FC = () => {
 
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-[#241A1E] mb-1">
-                    Image URL (High-Res)
+                    Product Photos
                   </label>
-                  <input
-                    type="url"
-                    value={formImageUrl}
-                    onChange={(e) => setFormImageUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full p-2.5 rounded border border-[#EFC9CE] bg-[#FDF4F1]"
-                  />
+
+                  {!imageUploadConfigured && (
+                    <div className="mb-2 p-2.5 rounded bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
+                      Image upload isn't configured for this build — you can still paste an
+                      image URL below.
+                    </div>
+                  )}
+
+                  {imageUploadError && (
+                    <div className="mb-2 p-2.5 rounded bg-rose-50 border border-rose-200 text-[11px] text-rose-700">
+                      {imageUploadError}
+                    </div>
+                  )}
+
+                  {/* Thumbnail grid of uploaded/attached images */}
+                  {(formImages.length > 0 || uploadingCount > 0) && (
+                    <div className="grid grid-cols-4 gap-2 mb-3">
+                      {formImages.map((url, i) => (
+                        <div key={`${url}-${i}`} className="relative group aspect-3/4 rounded-lg overflow-hidden border border-[#F0D9DC] bg-[#FBE8E4]">
+                          <img
+                            src={url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                          {i === 0 && (
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-[#241A1E]/80 text-white text-[8px] font-bold uppercase rounded">
+                              Cover
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFormImage(i)}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                            title="Remove image"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      {Array.from({ length: uploadingCount }).map((_, i) => (
+                        <div key={`uploading-${i}`} className="aspect-3/4 rounded-lg border border-dashed border-[#EFC9CE] bg-[#FDF4F1] flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 text-[#C2607D] animate-spin" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {formImages.length === 0 && uploadingCount === 0 && (
+                    <div className="mb-3 flex items-center gap-2 text-[11px] text-[#A8828A]">
+                      <ImageOff className="w-4 h-4" />
+                      <span>No photos yet — a placeholder will be used until you add one.</span>
+                    </div>
+                  )}
+
+                  {/* File upload */}
+                  <label
+                    className={`flex items-center justify-center gap-2 w-full p-3 rounded border-2 border-dashed border-[#EFC9CE] bg-[#FDF4F1] text-[#8C6A72] text-xs font-semibold transition ${
+                      imageUploadConfigured ? 'cursor-pointer hover:border-[#241A1E] hover:text-[#241A1E]' : 'opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>Upload photos from your device</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      multiple
+                      disabled={!imageUploadConfigured}
+                      className="hidden"
+                      onChange={(e) => {
+                        handleImageFilesSelected(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+
+                  {/* Fallback: paste an existing image URL */}
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="url"
+                      value={formManualImageUrl}
+                      onChange={(e) => setFormManualImageUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddManualImageUrl();
+                        }
+                      }}
+                      placeholder="Or paste an image URL"
+                      className="flex-1 p-2 rounded border border-[#EFC9CE] bg-white text-[11px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddManualImageUrl}
+                      className="px-3 py-2 rounded border border-[#EFC9CE] bg-white text-[11px] font-semibold text-[#241A1E] hover:bg-[#FDF4F1] cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-2">
@@ -1060,10 +1213,10 @@ export const AdminView: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSavingProduct}
+                    disabled={isSavingProduct || uploadingCount > 0}
                     className="px-6 py-2 bg-[#241A1E] text-white font-bold uppercase tracking-wider rounded hover:bg-[#3D2830] transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {isSavingProduct ? 'Saving…' : editingProduct ? 'Update Product' : 'Save & Publish'}
+                    {isSavingProduct ? 'Saving…' : uploadingCount > 0 ? 'Uploading photos…' : editingProduct ? 'Update Product' : 'Save & Publish'}
                   </button>
                 </div>
 
