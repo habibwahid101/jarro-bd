@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { ProductCard } from '../ProductCard';
-import { CATEGORIES_LIST, BRANDS_LIST } from '../../data/mockData';
+import { BRANDS_LIST } from '../../data/mockData';
 import { ProductCategory } from '../../types';
 
 const OCCASION_TABS: { id: string; label: string; categories: ProductCategory[] }[] = [
@@ -66,9 +66,8 @@ export const HomeView: React.FC = () => {
             <span>New Arrivals Every Week</span>
           </div>
 
-          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.1] mb-6">
-            Real Fits, <br className="hidden sm:inline" />
-            <span className="italic font-normal text-[#F0D9DC]">Real You</span>
+          <h1 className="font-serif text-3xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.1] mb-6 whitespace-nowrap">
+            Real Fits, <span className="italic font-normal text-[#F0D9DC]">Real You</span>
           </h1>
 
           <p className="max-w-xl mx-auto text-sm sm:text-base text-[#E8B9C1] font-normal leading-relaxed mb-8">
@@ -111,57 +110,7 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* -------------------------------------------------------------
-          2. SHOP BY CATEGORY
-         ------------------------------------------------------------- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-[#F0D9DC]">
-          <div>
-            <span className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#C2607D] block">
-              Shop the Catalogue
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[#241A1E] mt-1">
-              Shop by Category
-            </h2>
-          </div>
-          <button
-            onClick={() => navigateTo('shop', { category: 'all' })}
-            className="text-xs uppercase tracking-wider font-semibold text-[#241A1E] hover:text-[#C2607D] transition flex items-center gap-1 mt-2 sm:mt-0 cursor-pointer"
-          >
-            <span>View All Categories</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {CATEGORIES_LIST.filter(c => c.id !== 'all').map((cat) => (
-            <div
-              key={cat.id}
-              onClick={() => navigateTo('shop', { category: cat.id as ProductCategory })}
-              className="group relative rounded-lg overflow-hidden aspect-[3/4] bg-[#FBE8E4] border border-[#F0D9DC] cursor-pointer shadow-xs hover:shadow-md transition duration-300"
-            >
-              <img
-                src={cat.image}
-                alt={cat.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#241A1E]/90 via-[#241A1E]/30 to-transparent" />
-
-              <div className="absolute bottom-3 inset-x-3 text-white">
-                <span className="text-[9px] uppercase tracking-wider text-[#EFC9CE] font-medium block">
-                  {cat.tag}
-                </span>
-                <h3 className="font-serif text-sm sm:text-base font-semibold leading-tight mt-0.5 group-hover:text-[#EFC9CE] transition">
-                  {cat.name}
-                </h3>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* -------------------------------------------------------------
-          3. NEW ARRIVALS
+          2. NEW ARRIVALS
          ------------------------------------------------------------- */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-[#F0D9DC]">
