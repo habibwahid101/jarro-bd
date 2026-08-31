@@ -16,6 +16,12 @@ import { useShop } from '../../context/ShopContext';
 import { ProductCard } from '../ProductCard';
 import { BRANDS_LIST } from '../../data/mockData';
 import { ProductCategory } from '../../types';
+import heroThreePieceImg from '../../assets/products/tpc-01-a.jpg';
+import editorialTunicImg from '../../assets/products/kur-02-a.jpg';
+import galleryKurtiImg from '../../assets/products/kur-01-a.jpg';
+import galleryThreePieceImg from '../../assets/products/tpc-01-b.jpg';
+import galleryCoOrdImg from '../../assets/products/cor-01-a.jpg';
+import galleryPonchoImg from '../../assets/products/pon-01-b.jpg';
 
 const OCCASION_TABS: { id: string; label: string; categories: ProductCategory[] }[] = [
   { id: 'Everyday', label: '👚 Everyday Wear', categories: ['kurtis', 'co-ords'] },
@@ -52,7 +58,7 @@ export const HomeView: React.FC = () => {
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://placehold.co/2000x1200/2E1E24/F0D9DC?text=JARRO"
+            src={heroThreePieceImg}
             alt="JARRO women's clothing — kurtis, 3-piece sets, co-ords, ponchos and bangles"
             className="w-full h-full object-cover object-center opacity-40 scale-105 transition-transform duration-1000"
           />
@@ -177,7 +183,7 @@ export const HomeView: React.FC = () => {
 
             <div className="relative min-h-[320px] lg:min-h-full">
               <img
-                src="https://placehold.co/1000x1200/3D2830/F0D9DC?text=JARRO"
+                src={editorialTunicImg}
                 alt="JARRO clothing"
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
@@ -397,10 +403,10 @@ export const HomeView: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
-            { img: 'https://placehold.co/600x600/F0D9DC/241A1E?text=Kurti', caption: 'Emerald Palm Print Kurti' },
-            { img: 'https://placehold.co/600x600/EFC9CE/241A1E?text=3-Piece', caption: 'Powder Blue Floral 3-Piece' },
-            { img: 'https://placehold.co/600x600/E8B9C1/241A1E?text=Co-ord', caption: 'Rustic Terracotta Co-ord' },
-            { img: 'https://placehold.co/600x600/FBE8E4/241A1E?text=Poncho', caption: 'Cloud Grey Poncho Set' }
+            { img: galleryKurtiImg, caption: 'Emerald Palm Print Kurti' },
+            { img: galleryThreePieceImg, caption: 'Powder Blue Floral 3-Piece' },
+            { img: galleryCoOrdImg, caption: 'Rustic Terracotta Co-ord' },
+            { img: galleryPonchoImg, caption: 'Cloud Grey Poncho Set' }
           ].map((item, idx) => (
             <div key={idx} className="group relative aspect-square rounded-lg overflow-hidden bg-[#FBE8E4] border border-[#F0D9DC]">
               <img
