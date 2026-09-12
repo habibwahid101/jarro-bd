@@ -8,26 +8,26 @@ export type ProductCategory =
 export type FitType = 'Regular Fit' | 'Relaxed Fit' | 'Oversized' | 'A-Line' | 'Straight Cut';
 
 export interface ClothingAttributes {
-  fabric: string; // e.g. "Premium Muslin Cotton", "Georgette", "Viscose"
+  fabric: string;
   fit: FitType;
-  pattern: string; // e.g. "Floral Print", "Tie-Dye", "Solid"
-  sleeveType: string; // e.g. "Full Sleeve", "Three-Quarter Sleeve", "Sleeveless"
-  neckline?: string; // e.g. "Round Neck", "V-Neck", "Boat Neck"
-  occasion: string; // e.g. "Casual Daywear", "Festive", "Office Wear"
-  washCare: string; // e.g. "Hand wash cold, line dry in shade"
-  modelSize?: string; // e.g. "Model wears size M, height 5'5\""
-  piecesIncluded?: string; // e.g. "Tunic + Pants + Dupatta" for three-piece sets
+  pattern: string;
+  sleeveType: string;
+  neckline?: string;
+  occasion: string;
+  washCare: string;
+  modelSize?: string;
+  piecesIncluded?: string;
 }
 
 export interface AccessoryAttributes {
-  material: string; // e.g. "Lac Bangles with Kundan Stonework"
-  setPieces?: number; // e.g. 12 (bangles in a set)
+  material: string;
+  setPieces?: number;
   adjustable?: boolean;
 }
 
 export interface ProductVariant {
   id: string;
-  name: string; // e.g. "Size M", "Size L", "Free Size", "2.4 inch"
+  name: string;
   sku: string;
   price: number;
   oldPrice?: number;
@@ -35,12 +35,24 @@ export interface ProductVariant {
   inStock: boolean;
 }
 
+export type HomepageSlot =
+  | 'hero'
+  | 'editorial'
+  | 'new-arrivals'
+  | 'best-sellers'
+  | 'occasion-everyday'
+  | 'occasion-festive'
+  | 'occasion-modest'
+  | 'occasion-accessories'
+  | 'finishing-touches'
+  | 'gallery';
+
 export interface Product {
   id: string;
   sku: string;
   name: string;
   slug: string;
-  brand: string; // Collection name within JARRO (e.g. "JARRO Signature Prints")
+  brand: string;
   category: ProductCategory;
   subtitle: string;
   description: string;
@@ -56,14 +68,65 @@ export interface Product {
   isLimited?: boolean;
   rating: number;
   reviewCount: number;
-
-  // Category specific specs
   clothingSpecs?: ClothingAttributes;
   accessorySpecs?: AccessoryAttributes;
-
   tags: string[];
   careInstructions?: string;
   origin?: string;
+  placements?: HomepageSlot[];
+}
+
+export const HOMEPAGE_SLOTS: { id: HomepageSlot; label: string }[] = [
+  { id: 'hero', label: 'Hero banner' },
+  { id: 'editorial', label: 'Editorial / special block' },
+  { id: 'new-arrivals', label: 'New Arrivals' },
+  { id: 'best-sellers', label: 'Best Sellers' },
+  { id: 'occasion-everyday', label: 'Occasion: Everyday Wear' },
+  { id: 'occasion-festive', label: 'Occasion: Festive' },
+  { id: 'occasion-modest', label: 'Occasion: Draped & Modest' },
+  { id: 'occasion-accessories', label: 'Occasion: Finishing Touches' },
+  { id: 'finishing-touches', label: 'Finishing Touches row' },
+  { id: 'gallery', label: 'Styled by JARRO gallery' },
+];
+
+export const SITE_SETTINGS_ID = 'jarro-site-settings';
+
+export interface SiteSettings {
+  categoryLabels: Record<ProductCategory, string>;
+  brandLabels: Record<string, string>;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroCtaPrimary: string;
+  heroCtaSecondary: string;
+}
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  categoryLabels: {
+    kurtis: 'Kurtis & Tunics',
+    'three-piece': '3-Piece Sets',
+    'co-ords': 'Co-ord Sets',
+    ponchos: 'Ponchos & Capes',
+    accessories: 'Bangles & Accessories',
+  },
+  brandLabels: {
+    'JARRO Everyday Prints': 'JARRO Everyday Prints',
+    'JARRO Festive Edit': 'JARRO Festive Edit',
+    'JARRO Co-ord Studio': 'JARRO Co-ord Studio',
+    'JARRO Signature Ponchos': 'JARRO Signature Ponchos',
+    'JARRO Bangle House': 'JARRO Bangle House',
+  },
+  heroEyebrow: 'New Arrivals Every Week',
+  heroTitle: 'Real Fits, Real You',
+  heroSubtitle:
+    'Kurtis, 3-piece sets, co-ords, ponchos, and bangles — comfortable, everyday-priced, and delivered straight to your door across Bangladesh.',
+  heroCtaPrimary: 'Shop All Products',
+  heroCtaSecondary: 'Shop 3-Piece Sets',
+};
+
+export function isSiteSettingsItem(item: { id?: string; sku?: string } | null | undefined): boolean {
+  if (!item) return false;
+  return item.id === SITE_SETTINGS_ID || item.sku === 'JR-SITE-SETTINGS';
 }
 
 export interface CartItem {
@@ -106,7 +169,7 @@ export interface CustomerInfo {
 
 export interface Order {
   id: string;
-  orderNumber: string; // e.g. "JRO-84920"
+  orderNumber: string;
   createdAt: string;
   customer: CustomerInfo;
   items: OrderItem[];

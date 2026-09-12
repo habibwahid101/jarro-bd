@@ -7,8 +7,16 @@ import {
   ProductCategory,
   ProductVariant,
   CustomerInfo,
-  FilterState
+  FilterState,
+  SiteSettings,
+  DEFAULT_SITE_SETTINGS,
 } from '../types';
+import {
+  parseSiteSettingsRow,
+  buildSiteSettingsItem,
+  categoryLabelOf,
+  brandLabelOf,
+} from '../lib/storefront';
 import { INITIAL_PRODUCTS } from '../data/mockData';
 import {
   createDocClient,
@@ -62,13 +70,11 @@ interface ShopContextType {
   couponCode: string;
   couponDiscount: number;
 
-  // AWS / Admin auth
   awsConfigured: boolean;
   adminEmail: string | null;
   adminSignInAction: (email: string, password: string) => Promise<void>;
   adminSignOutAction: () => void;
 
-  // Navigation & UI controls
   navigateTo: (view: AppView, payload?: { product?: Product; category?: ProductCategory | 'all'; search?: string }) => void;
   setSelectedCategory: (cat: ProductCategory | 'all') => void;
   setSearchQuery: (query: string) => void;
@@ -78,7 +84,6 @@ interface ShopContextType {
   setIsMobileMenuOpen: (open: boolean) => void;
   setIsFragranceQuizOpen: (open: boolean) => void;
 
-  // Cart operations
   addToCart: (product: Product, variant?: ProductVariant, quantity?: number) => void;
   updateCartQuantity: (cartItemId: string, quantity: number) => void;
   removeFromCart: (cartItemId: string) => void;
@@ -88,28 +93,27 @@ interface ShopContextType {
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
 
-  // Wishlist
   toggleWishlist: (productId: string) => void;
   isInWishlist: (productId: string) => boolean;
 
-  // Checkout & Order
   createOrder: (customerInfo: CustomerInfo, deliveryFee: number) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus, adminNotes?: string) => Promise<void>;
   findOrder: (query: string) => Promise<Order | undefined>;
 
-  // Admin inventory
   addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   updateStock: (id: string, stock: number) => Promise<void>;
   resetToDemoData: () => void;
 
-  // Admin product image upload (S3) — requires an active admin session.
   imageUploadConfigured: boolean;
   uploadProductImage: (file: File) => Promise<string>;
 
-  // Helpers
   formatBDT: (amount: number) => string;
+  siteSettings: SiteSettings;
+  saveSiteSettings: (next: SiteSettings) => Promise<void>;
+  categoryLabel: (id: ProductCategory | 'all') => string;
+  brandLabel: (name: string) => string;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -131,13 +135,10 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Products & Orders now live in DynamoDB. We seed local state with the
-  // bundled demo data so the UI never shows a blank screen, then reconcile
-  // with AWS as soon as the initial load resolves.
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
 
-  // Cart / wishlist stay in the browser — per-visitor, ephemeral.
   const [cart, setCart] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CART);
     if (saved) {
@@ -154,17 +155,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   });
 
-  // Admin session (Cognito)
   const [adminSession, setAdminSession] = useState<AdminSession | null>(() => loadAdminSession());
 
-  // App UI State
-  // The admin area is intentionally not linked from anywhere on the public
-  // storefront (top bar, footer, mobile menu) — a luxury storefront
-  // shouldn't advertise a back-office to shoppers. It's still reachable by
-  // whoever needs it: opening /admin directly (or bookmarking it) lands
-  // here on load. Cognito sign-in (AdminGate) is the actual access control
-  // either way; this is purely about not putting "Admin Portal" in front
-  // of customers.
   const [activeView, setActiveView] = useState<AppView>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.replace(/\/+$/, '').toLowerCase();
@@ -181,20 +173,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isFragranceQuizOpen, setIsFragranceQuizOpen] = useState<boolean>(false);
-
-  // Coupon
   const [couponCode, setCouponCode] = useState<string>('');
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
 
-  // DynamoDB clients: guest (read products, create/look up own orders) and
-  // admin (full read/write, only present once signed in via Cognito).
   const guestClient = useMemo(() => (awsIsConfigured ? createDocClient() : null), []);
   const adminClient = useMemo(
     () => (awsIsConfigured && adminSession ? createDocClient(adminSession.idToken) : null),
     [adminSession]
   );
 
-  // Sync cart/wishlist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
   }, [cart]);
@@ -203,15 +190,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(STORAGE_KEYS.WISHLIST, JSON.stringify(wishlist));
   }, [wishlist]);
 
-  // Load products from DynamoDB on mount (falls back to bundled demo data
-  // if AWS isn't configured for this build, e.g. local dev without env vars).
   useEffect(() => {
     if (!guestClient) return;
     (async () => {
       try {
         const res = await guestClient.send(new ScanCommand({ TableName: PRODUCTS_TABLE }));
         if (res.Items && res.Items.length > 0) {
-          setProducts(res.Items as Product[]);
+          const parsed = parseSiteSettingsRow(res.Items);
+          setSiteSettings(parsed.settings);
+          setProducts(parsed.products);
         }
       } catch (err) {
         console.error('Failed to load products from DynamoDB, using bundled demo data.', err);
@@ -219,8 +206,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })();
   }, [guestClient]);
 
-  // Load the full order list once an admin is signed in (guests can't Scan
-  // — they can only create an order or look up their own via findOrder).
   useEffect(() => {
     if (!adminClient) {
       setOrders([]);
@@ -236,20 +221,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })();
   }, [adminClient]);
 
-  // Currency helper
   const formatBDT = (amount: number): string => {
-    return `৳${Math.round(amount).toLocaleString('en-US')}`;
+    return `\u09f3${Math.round(amount).toLocaleString('en-US')}`;
   };
 
-  // Cart calculations
   const cartSubtotal = cart.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  // Navigation
   const navigateTo = (view: AppView, payload?: { product?: Product; category?: ProductCategory | 'all'; search?: string }) => {
-    if (payload?.product) {
-      setSelectedProduct(payload.product);
-    }
+    if (payload?.product) setSelectedProduct(payload.product);
     if (payload?.category !== undefined) {
       setSelectedCategory(payload.category);
       setFilters(prev => ({ ...prev, category: payload.category }));
@@ -259,12 +239,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setFilters(prev => ({ ...prev, searchQuery: payload.search || '' }));
     }
     setActiveView(view);
-    // Keep the URL in sync with the admin view specifically (replaceState,
-    // not pushState — this app doesn't listen for popstate/back-button
-    // navigation between views, so adding history entries here would just
-    // produce a broken back button). Every other view shares "/", matching
-    // existing behavior; only /admin needs its own reachable URL now that
-    // it's not linked anywhere in the UI.
     if (typeof window !== 'undefined') {
       const targetPath = view === 'admin' ? '/admin' : '/';
       if (window.location.pathname !== targetPath) {
@@ -274,8 +248,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setIsMobileMenuOpen(false);
   };
-
-  // --- Admin auth -----------------------------------------------------
 
   const adminSignInAction = useCallback(async (email: string, password: string) => {
     const session = await adminSignIn(email, password);
@@ -287,8 +259,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAdminSession(null);
   }, []);
 
-  // --- Cart -------------------------------------------------------------
-
   const addToCart = (product: Product, variant?: ProductVariant, quantity: number = 1) => {
     const selectedVar = variant || product.variants[0] || {
       id: `def-${product.id}`,
@@ -298,29 +268,21 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       stock: product.stock,
       inStock: product.stock > 0
     };
-
     const cartItemId = `${product.id}-${selectedVar.id}`;
-
     setCart(prev => {
       const existing = prev.find(item => item.id === cartItemId);
       if (existing) {
-        return prev.map(item =>
-          item.id === cartItemId
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      } else {
-        return [...prev, {
-          id: cartItemId,
-          productId: product.id,
-          product,
-          selectedVariant: selectedVar,
-          quantity,
-          unitPrice: selectedVar.price || product.price
-        }];
+        return prev.map(item => item.id === cartItemId ? { ...item, quantity: item.quantity + quantity } : item);
       }
+      return [...prev, {
+        id: cartItemId,
+        productId: product.id,
+        product,
+        selectedVariant: selectedVar,
+        quantity,
+        unitPrice: selectedVar.price || product.price
+      }];
     });
-
     setIsCartOpen(true);
   };
 
@@ -329,9 +291,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       removeFromCart(cartItemId);
       return;
     }
-    // Cap at the variant's available stock so the cart can never hold more
-    // units than are actually in inventory, regardless of which UI control
-    // triggered the change.
     setCart(prev => prev.map(item => {
       if (item.id !== cartItemId) return item;
       const maxQty = Math.max(1, item.selectedVariant.stock);
@@ -349,7 +308,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCouponDiscount(0);
   };
 
-  // Coupons
   const applyCoupon = (code: string): { success: boolean; message: string } => {
     const cleanCode = code.trim().toUpperCase();
     if (cleanCode === 'WELCOME10' || cleanCode === 'DHAKAFIRST') {
@@ -367,7 +325,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (cleanCode === 'EID500') {
       setCouponCode(cleanCode);
       setCouponDiscount(500);
-      return { success: true, message: '৳500 celebration voucher applied!' };
+      return { success: true, message: '\u09f3500 celebration voucher applied!' };
     }
     return { success: false, message: 'Invalid or expired promotional code.' };
   };
@@ -377,23 +335,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCouponDiscount(0);
   };
 
-  // Wishlist
   const toggleWishlist = (productId: string) => {
-    setWishlist(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
+    setWishlist(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
   };
 
   const isInWishlist = (productId: string) => wishlist.includes(productId);
 
-  // --- Orders -------------------------------------------------------------
-
   const createOrder = async (customerInfo: CustomerInfo, deliveryFee: number): Promise<Order> => {
     const randomSuffix = Math.floor(10000 + Math.random() * 90000);
     const orderNumber = `JRO-${randomSuffix}`;
-
     const orderItems = cart.map(item => ({
       productId: item.productId,
       productName: item.product.name,
@@ -404,10 +354,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unitPrice: item.unitPrice,
       totalPrice: item.unitPrice * item.quantity
     }));
-
     const finalSubtotal = cartSubtotal;
     const finalTotal = Math.max(0, finalSubtotal + deliveryFee - couponDiscount);
-
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       orderNumber,
@@ -423,20 +371,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: 'New',
       adminNotes: 'Order placed via online storefront. Cash on delivery verification pending.'
     };
-
-    // Persist to DynamoDB FIRST (guest role: PutItem on Orders only) and wait
-    // for confirmation before touching any local state or navigating to the
-    // success screen. Previously this write was fire-and-forget: the customer
-    // saw "order confirmed" immediately regardless of whether the database
-    // write actually succeeded, so a network blip or a permissions issue
-    // could silently lose a real order. Now a failure here throws, the
-    // caller (checkout screen) catches it, and the customer sees an error
-    // and can retry instead of believing an order went through when it
-    // didn't. ConditionExpression additionally guards against overwriting an
-    // existing order: the guest IAM role can PutItem but has no
-    // Update/Delete, so without this condition a client with valid guest
-    // credentials could overwrite another shopper's order by resubmitting
-    // the same id.
     if (guestClient) {
       const item = { ...newOrder, customerMobile: customerInfo.mobile };
       try {
@@ -450,36 +384,24 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('We could not confirm your order. Please try again, or contact us directly via WhatsApp.');
       }
     }
-
-    // Only after the order is confirmed persisted (or AWS isn't configured,
-    // e.g. local dev) do we touch local state, so the cart is never cleared
-    // and the success screen never shown for an order that didn't actually
-    // save.
     setProducts(prevProducts =>
       prevProducts.map(p => {
         const matchingCartItems = cart.filter(ci => ci.productId === p.id);
         if (matchingCartItems.length > 0) {
           const totalQty = matchingCartItems.reduce((s, ci) => s + ci.quantity, 0);
-          const newStock = Math.max(0, p.stock - totalQty);
-          return { ...p, stock: newStock };
+          return { ...p, stock: Math.max(0, p.stock - totalQty) };
         }
         return p;
       })
     );
-
     setOrders(prev => [newOrder, ...prev]);
     setCurrentOrder(newOrder);
     clearCart();
     setActiveView('order-success');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     return newOrder;
   };
 
-  // Persists to DynamoDB first and waits for confirmation before updating
-  // local state, matching addProduct/updateProduct: previously this was
-  // fire-and-forget, so the admin UI would show the new status immediately
-  // even if the DynamoDB write actually failed, silently losing the update.
   const updateOrderStatus = async (orderId: string, status: OrderStatus, adminNotes?: string): Promise<void> => {
     if (adminClient) {
       const values: Record<string, unknown> = adminNotes !== undefined
@@ -501,26 +423,17 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Could not update this order. Please check your connection and try again.');
       }
     }
-
     setOrders(prev => prev.map(ord => {
       if (ord.id === orderId) {
-        return {
-          ...ord,
-          status,
-          adminNotes: adminNotes !== undefined ? adminNotes : ord.adminNotes
-        };
+        return { ...ord, status, adminNotes: adminNotes !== undefined ? adminNotes : ord.adminNotes };
       }
       return ord;
     }));
   };
 
-  // Looks up an order by exact order number (e.g. "JRO-84920") or exact
-  // mobile number, via the DynamoDB GSIs — works for guests, no sign-in
-  // required. Falls back to the locally-known orders if AWS isn't configured.
   const findOrder = async (query: string): Promise<Order | undefined> => {
     const clean = query.trim();
     if (!clean) return undefined;
-
     if (!guestClient) {
       const cleanLower = clean.toLowerCase();
       return orders.find(ord =>
@@ -528,20 +441,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ord.customer.mobile.replace(/\D/g, '').includes(cleanLower.replace(/\D/g, ''))
       );
     }
-
     try {
-      // Try as an order number first (case-insensitive exact match).
       const byNumber = await guestClient.send(new QueryCommand({
         TableName: ORDERS_TABLE,
         IndexName: 'orderNumber-index',
         KeyConditionExpression: 'orderNumber = :n',
         ExpressionAttributeValues: { ':n': clean.toUpperCase() },
       }));
-      if (byNumber.Items && byNumber.Items.length > 0) {
-        return byNumber.Items[0] as Order;
-      }
-
-      // Fall back to an exact mobile number match.
+      if (byNumber.Items && byNumber.Items.length > 0) return byNumber.Items[0] as Order;
       const digits = clean.replace(/\D/g, '');
       if (digits.length >= 6) {
         const byMobile = await guestClient.send(new QueryCommand({
@@ -551,7 +458,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ExpressionAttributeValues: { ':m': digits },
         }));
         if (byMobile.Items && byMobile.Items.length > 0) {
-          // Most recent first
           const items = byMobile.Items as Order[];
           items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
           return items[0];
@@ -559,29 +465,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return undefined;
     } catch (err) {
-      // Previously this swallowed the error and returned undefined, which
-      // meant a network/permissions failure looked identical in the UI to
-      // "no such order exists" — a customer with a real, valid order could
-      // be told it wasn't found just because their connection dropped.
-      // Throwing here lets the UI (OrderLookupView) distinguish the two.
       console.error('Order lookup failed.', err);
       throw new Error('We could not check that order right now. Please check your connection and try again, or contact us on WhatsApp.');
     }
   };
 
-  // --- Admin Product Actions --------------------------------------------
-
-  // Persists to DynamoDB first and waits for confirmation before updating
-  // local state, mirroring the order-creation flow above: previously this
-  // was fire-and-forget, so the admin form would close and reset as if the
-  // save succeeded even if the DynamoDB write actually failed, silently
-  // losing the new product.
   const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
-    const newProduct: Product = {
-      ...productData,
-      id: `prod-${Date.now()}`
-    };
-
+    const newProduct: Product = { ...productData, id: `prod-${Date.now()}` };
     if (adminClient) {
       try {
         await adminClient.send(new PutCommand({ TableName: PRODUCTS_TABLE, Item: newProduct }));
@@ -590,7 +480,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Could not save this product. Please check your connection and try again.');
       }
     }
-
     setProducts(prev => [newProduct, ...prev]);
     return newProduct;
   };
@@ -598,7 +487,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProduct = async (id: string, updatedFields: Partial<Product>): Promise<void> => {
     const current = products.find(p => p.id === id);
     const merged: Product | undefined = current ? { ...current, ...updatedFields } : undefined;
-
     if (adminClient && merged) {
       try {
         await adminClient.send(new PutCommand({ TableName: PRODUCTS_TABLE, Item: merged }));
@@ -607,7 +495,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Could not save these changes. Please check your connection and try again.');
       }
     }
-
     setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...updatedFields } : p)));
     if (selectedProduct && selectedProduct.id === id) {
       setSelectedProduct(prev => prev ? { ...prev, ...updatedFields } : null);
@@ -616,7 +503,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteProduct = async (id: string): Promise<void> => {
     const toDelete = products.find(p => p.id === id);
-
     if (adminClient) {
       try {
         await adminClient.send(new DeleteCommand({ TableName: PRODUCTS_TABLE, Key: { id } }));
@@ -625,18 +511,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Could not delete this product. Please check your connection and try again.');
       }
     }
-
     setProducts(prev => prev.filter(p => p.id !== id));
     if (selectedProduct?.id === id) {
       setSelectedProduct(null);
       setActiveView('shop');
     }
-
-    // Best-effort S3 cleanup, after the DynamoDB delete is confirmed. Never
-    // blocks or fails the product deletion itself — an orphaned image in
-    // the bucket is a minor storage-cost nit, not a data-integrity issue,
-    // and deleteProductImage() already no-ops for any URL that isn't one of
-    // ours (e.g. a manually-pasted external URL or the bundled placeholder).
     if (adminSession && toDelete) {
       toDelete.images.forEach(url => {
         deleteProductImageFromS3(adminSession.idToken, url).catch(() => {});
@@ -658,19 +537,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Could not update stock for this product. Please check your connection and try again.');
       }
     }
-
     setProducts(prev => prev.map(p => p.id === id ? { ...p, stock } : p));
   };
 
-  // Uploads a single image file to S3 (products/ prefix) using the current
-  // admin's temporary credentials and returns its public URL. Throws if no
-  // admin is signed in — matches every other admin action in this file,
-  // which all assume adminSession is present (AdminGate enforces this at
-  // the UI layer before any of these can be reached).
   const uploadProductImage = async (file: File): Promise<string> => {
-    if (!adminSession) {
-      throw new Error('You must be signed in as an admin to upload images.');
-    }
+    if (!adminSession) throw new Error('You must be signed in as an admin to upload images.');
     try {
       return await uploadProductImageToS3(adminSession.idToken, file);
     } catch (err) {
@@ -679,16 +550,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Re-seeds the Products table from the bundled demo catalogue. Does NOT
-  // touch the Orders table — real customer orders are never wiped by this.
+  const saveSiteSettings = async (next: SiteSettings): Promise<void> => {
+    setSiteSettings(next);
+    if (!adminClient) return;
+    try {
+      await adminClient.send(new PutCommand({ TableName: PRODUCTS_TABLE, Item: buildSiteSettingsItem(next) }));
+    } catch (err) {
+      console.error('Failed to save storefront settings.', err);
+      throw new Error('Could not save storefront settings. Please try again.');
+    }
+  };
+
+  const categoryLabel = (id: ProductCategory | 'all'): string => categoryLabelOf(siteSettings, id);
+  const brandLabel = (name: string): string => brandLabelOf(siteSettings, name);
+
   const resetToDemoData = () => {
     setProducts(INITIAL_PRODUCTS);
-
     if (adminClient) {
       Promise.all(
-        INITIAL_PRODUCTS.map(p =>
-          adminClient!.send(new PutCommand({ TableName: PRODUCTS_TABLE, Item: p }))
-        )
+        INITIAL_PRODUCTS.map(p => adminClient!.send(new PutCommand({ TableName: PRODUCTS_TABLE, Item: p })))
       ).catch(err => console.error('Failed to reset demo products in DynamoDB.', err));
     }
   };
@@ -744,7 +624,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetToDemoData,
         imageUploadConfigured: imageUploadIsConfigured,
         uploadProductImage,
-        formatBDT
+        formatBDT,
+        siteSettings,
+        saveSiteSettings,
+        categoryLabel,
+        brandLabel,
       }}
     >
       {children}
