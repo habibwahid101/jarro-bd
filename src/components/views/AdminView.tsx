@@ -315,7 +315,7 @@ export const AdminView: React.FC = () => {
             <div className="relative bg-white w-full max-w-2xl rounded-xl p-6 space-y-4 border border-[#F0D9DC]">
               <div className="flex justify-between"><h3 className="font-serif text-lg font-bold">{selectedOrderForModal.orderNumber}</h3><button onClick={() => setSelectedOrderForModal(null)}><X className="w-5 h-5" /></button></div>
               <p className="text-xs">{selectedOrderForModal.customer.fullName} · {selectedOrderForModal.customer.mobile}</p>
-              <p className="text-xs">{selectedOrderForModal.customer.addressLine1}, {selectedOrderForModal.customer.district}</p>
+              <p className="text-xs">{selectedOrderForModal.customer.fullAddress}, {selectedOrderForModal.customer.district}</p>
               <ul className="text-xs space-y-1">{selectedOrderForModal.items.map((item, i) => (<li key={i}>{item.quantity} × {item.productName} — {formatBDT(item.totalPrice)}</li>))}</ul>
               <textarea value={editingAdminNote} onChange={(e) => setEditingAdminNote(e.target.value)} className="w-full text-xs p-2.5 border border-[#EFC9CE] rounded" rows={3} />
               <button onClick={() => runAdminAction(async () => { await updateOrderStatus(selectedOrderForModal.id, selectedOrderForModal.status, editingAdminNote); setSelectedOrderForModal(null); }, 'Could not save notes.')} className="px-4 py-2 bg-[#241A1E] text-white text-xs rounded">Save notes</button>
