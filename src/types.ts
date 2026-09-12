@@ -103,11 +103,11 @@ export interface SiteSettings {
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   categoryLabels: {
-    kurtis: 'Kurtis',
+    kurtis: 'Kurtis & Tunics',
     'three-piece': '3-Piece Sets',
-    'co-ords': 'Co-ords',
-    ponchos: 'Ponchos',
-    accessories: 'Accessories',
+    'co-ords': 'Co-ord Sets',
+    ponchos: 'Ponchos & Capes',
+    accessories: 'Bangles & Accessories',
   },
   brandLabels: {
     'JARRO Everyday Prints': 'JARRO Everyday Prints',
